@@ -10,6 +10,8 @@ ENT.Spawnable       = false
 ENT.AdminSpawnable  = false
 ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
 
+local PLAYER = FindMetaTable("Player")
+local pGetPlayerColor = PLAYER.GetPlayerColor
 local ply = ply or nil
 
 function ENT:Initialize()
@@ -28,7 +30,7 @@ function ENT:Initialize()
     self:SetMaterial(ply:GetMaterial())
     self:SetColor(ply:GetColor())
     self.GetPlayerColor = function()
-        return ply:GetPlayerColor()
+        return pGetPlayerColor(ply)
     end
 
     self:DrawShadow(false)
@@ -40,19 +42,36 @@ function ENT:Initialize()
     self:DoBoneManipulation()
 end
 
+local ENTITY = FindMetaTable("Entity")
+local eGetModelScale, eSetModelScale = ENTITY.GetModelScale, ENTITY.SetModelScale
+local eGetRenderFX, eSetRenderFX = ENTITY.GetRenderFX, ENTITY.SetRenderFX
+local eGetPos, eSetPos = ENTITY.GetPos, ENTITY.SetPos
+local pGetRenderAngles, eSetAngles = PLAYER.GetRenderAngles, ENTITY.SetAngles
+local eGetSequence, eSetSequence = ENTITY.GetSequence, ENTITY.SetSequence
+local eSnatchModelInstance = ENTITY.SnatchModelInstance
+local eGetCycle, eSetCycle = ENTITY.GetCycle, ENTITY.SetCycle
+local eGetNumPoseParameters = ENTITY.GetNumPoseParameters
+local eGetPoseParameterRange = ENTITY.GetPoseParameterRange
+local eGetPoseParameter, eSetPoseParameter = ENTITY.GetPoseParameter, ENTITY.SetPoseParameter
+local eInvalidateBoneCache = ENTITY.InvalidateBoneCache
+local eGetNumBodyGroups = ENTITY.GetNumBodyGroups
+local eGetBodygroup, eSetBodygroup = ENTITY.GetBodygroup, ENTITY.SetBodygroup
+local pAlive = PLAYER.Alive
+local eSetNextClientThink = ENTITY.SetNextClientThink
+local aCurTime = CurTime
 local haveLayeredSequencesBeenFixed = false
 local wasAlive = false
 local lastBodygroupApply = 0
 
 function ENT:Think()
-    self:SetModelScale(ply:GetModelScale())
-    self:SetRenderFX(ply:GetRenderFX())
-    self:SetPos(ply:GetPos())
-    self:SetAngles(ply:GetRenderAngles())
-    self:SetSequence(ply:GetSequence())
+    eSetModelScale(self, eGetModelScale(ply))
+    eSetRenderFX(self, eGetRenderFX(ply))
+    eSetPos(self, eGetPos(ply))
+    eSetAngles(self, pGetRenderAngles(ply))
+    eSetSequence(self, eGetSequence(ply))
 
     -- COMMENT
-    self:SnatchModelInstance(ply)
+    eSnatchModelInstance(self, ply)
 
     -- FIXME: https://github.com/Facepunch/garrysmod-requests/issues/1723
     if haveLayeredSequencesBeenFixed then
@@ -64,27 +83,27 @@ function ENT:Think()
         self:CopyLayerSequenceInfo(5, ply)
     end
 
-    self:SetCycle(ply:GetCycle())
+    eSetCycle(self, eGetCycle(ply))
 
-    for i = 0, ply:GetNumPoseParameters() - 1 do
-        local min, max = ply:GetPoseParameterRange(i)
+    for i = 0, eGetNumPoseParameters(ply) - 1 do
+        local min, max = eGetPoseParameterRange(ply, i)
 
-        self:SetPoseParameter(i, math.Remap(ply:GetPoseParameter(i), 0, 1, min, max))
+        eSetPoseParameter(self, i, math.Remap(eGetPoseParameter(ply, i), 0, 1, min, max))
     end
 
-    self:InvalidateBoneCache()
+    eInvalidateBoneCache(self)
 
-    local curTime = CurTime()
+    local curTime = aCurTime()
 
     if lastBodygroupApply + 1.0 < curTime then
-        for i = 1, ply:GetNumBodyGroups() do
-            self:SetBodygroup(i, ply:GetBodygroup(i))
+        for i = 1, eGetNumBodyGroups(ply) do
+            eSetBodygroup(self, i, eGetBodygroup(ply, i))
         end
 
         lastBodygroupApply = curTime
     end
 
-    local isAlive = ply:Alive()
+    local isAlive = pAlive(ply)
 
     if !wasAlive and isAlive then
         self:DoBoneManipulation()
@@ -93,7 +112,7 @@ function ENT:Think()
     wasAlive = isAlive
 
     -- Set the next think to run as soon as possible, i.e. the next frame.
-    self:NextThink(curTime)
+    eSetNextClientThink(self, curTime)
 
     -- Apply NextThink call
     return true
@@ -101,20 +120,26 @@ end
 
 local legsEnabled = GetConVar("cl_legs")
 local vLegsEnabled = CreateClientConVar("cl_vehlegs", 0, true, false, "Enable/Disable the rendering of the legs in vehicles", 0, 1)
+local pInVehicle = PLAYER.InVehicle
 
 local function ShouldDrawInVehicle(isExternalDraw)
-    if ply:InVehicle() and isExternalDraw then
+    if pInVehicle(ply) and isExternalDraw then
         return legsEnabled:GetBool() and !vLegsEnabled:GetBool()
     end
 
     return false
 end
 
-local function ExternalShouldDraw()
-    return VWallrunning or inmantle or (pk_pills and pk_pills.getMappedEnt(ply)) or (ply.IsProne and ply:IsProne())
+local function ExternalShouldDraw(plyTable)
+    return VWallrunning or inmantle or (pk_pills and pk_pills.getMappedEnt(ply)) or (plyTable.IsProne and plyTable.IsProne(ply))
 end
 
-function ENT:ShouldDraw(isExternalDraw)
+local pShouldDrawLocalPlayer = PLAYER.ShouldDrawLocalPlayer
+local pGetObserverTarget = PLAYER.GetObserverTarget
+local aGetViewEntity = GetViewEntity
+local aIsValid = IsValid
+
+function ENT:ShouldDraw(isExternalDraw, plyTable)
     local shouldDisable = hook.Run("ShouldDisableLegs")
 
     if shouldDisable then
@@ -122,13 +147,13 @@ function ENT:ShouldDraw(isExternalDraw)
     end
 
     if legsEnabled:GetBool() then
-        return  (ply:Alive() or (ply.IsGhosted and ply:IsGhosted()))    and
-                !ShouldDrawInVehicle(isExternalDraw)                    and
-                GetViewEntity() == ply                                  and
-                !ply:ShouldDrawLocalPlayer()                            and
-                !IsValid(ply:GetObserverTarget())                       and
-                !ExternalShouldDraw()                                   and
-                !ply.ShouldDisableLegs
+        return  (pAlive(ply) or (plyTable.IsGhosted and plyTable.IsGhosted(ply)))    and
+                !ShouldDrawInVehicle(isExternalDraw)                                 and
+                aGetViewEntity() == ply                                              and
+                !pShouldDrawLocalPlayer(ply)                                         and
+                !aIsValid(pGetObserverTarget(ply))                                   and
+                !ExternalShouldDraw(plyTable)                                        and
+                !plyTable.ShouldDisableLegs
     else
         return false
     end
@@ -184,18 +209,23 @@ local bodyBones = {
     -- "ValveBiped.Bip01_Spine2"
 }
 
+local eGetBoneCount = ENTITY.GetBoneCount
+local eManipulateBoneScale = ENTITY.ManipulateBoneScale
+local eManipulateBonePosition = ENTITY.ManipulateBonePosition
+local eManipulateBoneAngles = ENTITY.ManipulateBoneAngles
+local eLookupBone = ENTITY.LookupBone
 local bodyBonesCount = #bodyBones
 local scaleVector, posVector = Vector(1, 1, 1), Vector(0, -128, 0)
 
 function ENT:DoBoneManipulation()
-    for i = 0, self:GetBoneCount() do
+    for i = 0, eGetBoneCount(self) do
         -- print("reseting bone: ", i)
 
-        self:ManipulateBoneScale(i, scaleVector)
-        self:ManipulateBonePosition(i, vector_origin)
+        eManipulateBoneScale(self, i, scaleVector)
+        eManipulateBonePosition(self, i, vector_origin)
     end
 
-    local inVehicle = ply:InVehicle()
+    local inVehicle = pInVehicle(ply)
     local bonesToRemove, removeCount = bodyBones, bodyBonesCount
 
     if inVehicle then
@@ -204,15 +234,15 @@ function ENT:DoBoneManipulation()
 
     for i = 1, removeCount do
         local boneID = bonesToRemove[i]
-        local bone = self:LookupBone(boneID)
+        local bone = eLookupBone(self, boneID)
 
         -- FIXME: bone stretching sucks (do custom clip plane?)
         if bone then
-            self:ManipulateBoneScale(bone, vector_origin)
+            eManipulateBoneScale(self, bone, vector_origin)
 
             if !inVehicle then
-                self:ManipulateBonePosition(bone, posVector)
-                self:ManipulateBoneAngles(bone, angle_zero)
+                eManipulateBonePosition(self, bone, posVector)
+                eManipulateBoneAngles(self, bone, angle_zero)
             end
         end
     end
@@ -226,6 +256,22 @@ function ENT:CopyLayerSequenceInfo(layer, fromEnt)
     self:SetLayerCycle(layer, fromEnt:GetLayerCycle(layer))
 end
 
+local eGetTable = ENTITY.GetTable
+local sShouldDraw = nil
+local eDrawShadow = ENTITY.DrawShadow
+local eDestroyShadow = ENTITY.DestroyShadow
+local rGetName = FindMetaTable("ITexture").GetName
+local sLower = string.lower
+local pCrouching = PLAYER.Crouching
+local pGetVehicle = PLAYER.GetVehicle
+local eGetAngles = ENTITY.GetAngles
+local eEyeAngles = ENTITY.EyeAngles
+local eGetGroundEntity = ENTITY.GetGroundEntity
+local pKeyDown = PLAYER.KeyDown
+local eSetRenderOrigin = ENTITY.SetRenderOrigin
+local eSetRenderAngles = ENTITY.SetRenderAngles
+local eSetupBones = ENTITY.SetupBones
+local eDrawModel = ENTITY.DrawModel
 local legsOffset = CreateClientConVar("cl_legs_offset", 17, true, false, "Offset of legs from you.", 10, 30)
 local legsAngle = CreateClientConVar("cl_legs_angle", 5, true, false, "Angle of legs model.", 0, 10)
 local renderPos = Vector(0, 0, 3)
@@ -235,30 +281,35 @@ local waterRT = "_rt_waterreflection"
 local dummyRT = "_rt_shadowdummy"
 local cameraRT = "_rt_camera"
 
-function ENT:DoRender(isExternalDraw)
-    if !self:ShouldDraw(isExternalDraw) then
+function ENT:DoRender(isExternalDraw, plyTable)
+    plyTable = plyTable or eGetTable(ply)
+
+    -- COMMENT
+    sShouldDraw = sShouldDraw or self.ShouldDraw
+
+    if !sShouldDraw(self, isExternalDraw, plyTable) then
         return
     end
 
     -- COMMENT
-    self:DrawShadow(false)
-    self:DestroyShadow()
+    eDrawShadow(self, false)
+    eDestroyShadow(self)
 
     local rt = render.GetRenderTarget()
 
     -- WORKAROUND: https://github.com/Facepunch/garrysmod-requests/issues/1943#issuecomment-1039511256
     if rt then
-        local rtName = string.lower(rt:GetName())
+        local rtName = sLower(rGetName(rt))
 
         if rtName == waterRT or rtName == dummyRT or rtName == cameraRT then
             return
         end
     end
 
-    local inVehicle = ply:InVehicle()
-    local isCrouching = ply:Crouching()
+    local inVehicle = pInVehicle(ply)
+    local isCrouching = pCrouching(ply)
 
-    renderPos:Set(ply:GetPos())
+    renderPos:Set(eGetPos(ply))
     renderAng:Zero()
 
     if !isCrouching and !inVehicle then
@@ -270,12 +321,12 @@ function ENT:DoRender(isExternalDraw)
     end
 
     if inVehicle then
-        renderAng:Set(ply:GetVehicle():GetAngles())
+        renderAng:Set(eGetAngles(pGetVehicle(ply)))
         renderAng:RotateAroundAxis(renderAng:Up(), 90)
     else
         -- y'all need to stop using sharpeye holy shit
         -- Original code: sharpeye_focus and sharpeye_focus.GetBiaisViewAngles and sharpeye_focus:GetBiaisViewAngles() or ply:EyeAngles()
-        local biaisAngles = ply:EyeAngles()
+        local biaisAngles = eEyeAngles(ply)
 
         renderAng.y = biaisAngles.y
 
@@ -285,20 +336,20 @@ function ENT:DoRender(isExternalDraw)
         renderPos.x = renderPos.x + math.cos(radAngle) * forwardOffset
         renderPos.y = renderPos.y + math.sin(radAngle) * forwardOffset
 
-        if ply:GetGroundEntity() == NULL then
+        if eGetGroundEntity(ply) == NULL then
             renderPos.z = renderPos.z + 4
 
-            if ply:KeyDown(IN_DUCK) then
+            if pKeyDown(ply, IN_DUCK) then
                 renderPos.z = renderPos.z - 28
             end
         end
     end
 
-    self:SetRenderOrigin(renderPos)
-    self:SetRenderAngles(renderAng)
+    eSetRenderOrigin(self, renderPos)
+    eSetRenderAngles(self, renderAng)
 
     -- We have to do this, probably due to us manually drawing the entity multiple times.
-    self:SetupBones()
+    eSetupBones(self)
 
     local eyePos = EyePos()
 
@@ -306,7 +357,7 @@ function ENT:DoRender(isExternalDraw)
     if isCrouching then
         render.SetBlend(0.33)
 
-        self:DrawModel()
+        eDrawModel(self)
 
         -- clipOffset: Vector(0, 0, -12)
         eyePos.z = eyePos.z - 12
@@ -319,16 +370,21 @@ function ENT:DoRender(isExternalDraw)
     render.PushCustomClipPlane(clipVector, clipVector:Dot(eyePos))
             render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
                 render.SetBlend(renderColor.a / 255)
-                        self:DrawModel()
+                    eDrawModel(self)
                 render.SetBlend(1)
             render.SetColorModulation(1, 1, 1)
         render.PopCustomClipPlane()
     render.EnableClipping(bEnabled)
 
-    self:SetRenderOrigin()
-    self:SetRenderAngles()
+    eSetRenderOrigin(self)
+    eSetRenderAngles(self)
 end
 
+local sDoRender = nil
+
 function ENT:DrawTranslucent(flags)
-    self:DoRender(false)
+    -- COMMENT
+    sDoRender = sDoRender or self.DoRender
+
+    sDoRender(self, false)
 end

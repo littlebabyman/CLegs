@@ -1,12 +1,12 @@
 local ENTITY = FindMetaTable("Entity")
 local entityGetModel = ENTITY.GetModel
 
-local function GetLegModel(ply)
+local function GetLegModel(ply, plyTable)
     if CLIENT then
         local client = LocalPlayer()
 
-        if client.enforce_model then
-            return client.enforce_model
+        if plyTable.enforce_model then
+            return plyTable.enforce_model
         end
     end
 
@@ -23,31 +23,36 @@ function GetPlayerLegs(ply)
     local legEnt = ply.LegEnt
 
     if IsValid(legEnt) then
-        return legEnt:ShouldDrawLegs() and legEnt or client
+        return legEnt:ShouldDraw() and legEnt or client
     end
 end
 
+local eGetTable = ENTITY.GetTable
+
 local function ConstructLegsEnt(ply, legModel)
-    local oldLegEnt = ply.LegEnt
+    local plyTable = eGetTable(ply)
+    local oldLegEnt = plyTable.LegEnt
 
     if IsValid(oldLegEnt) then
         oldLegEnt:Remove()
     end
 
-    legModel = legModel or GetLegModel(ply)
+    legModel = legModel or GetLegModel(ply, plyTable)
 
     local legEnt = ents.CreateClientside("firstperson_legs")
     legEnt:SetModel(legModel)
     legEnt:Spawn()
 
-    ply.LegEnt = legEnt
+    plyTable.LegEnt = legEnt
 end
 
 local legsEnabled = CreateClientConVar("cl_legs", 1, true, false, "Enable/Disable the rendering of the legs", 0, 1)
 
 hook.Add("InitPostEntity", "CLegs:LegInitialize", function()
     timer.Simple(0, function()
-        if !legsEnabled:GetBool() then return end
+        if !legsEnabled:GetBool() then
+            return
+        end
 
         ConstructLegsEnt(LocalPlayer())
     end)
@@ -55,21 +60,24 @@ end)
 
 local PLAYER = FindMetaTable("Player")
 local plyAlive = PLAYER.Alive
+local aIsValid = IsValid
+local client = nil
 local wasAlive = false
-local isValid = IsValid
 
 hook.Add("Think", "CLegs:ChangeModel", function()
-    local ply = LocalPlayer()
-    local legEnt, legModel = ply.LegEnt, GetLegModel(ply)
-    local legsValid = isValid(legEnt)
+    client = client or LocalPlayer()
+
+    local plyTable = eGetTable(client)
+    local legEnt, legModel = plyTable.LegEnt, GetLegModel(client, plyTable)
+    local legsValid = aIsValid(legEnt)
 
     if legsValid and legModel != entityGetModel(legEnt) then
-        ConstructLegsEnt(ply, legModel)
+        ConstructLegsEnt(client, legModel)
 
         return
     end
 
-    local isAlive = plyAlive(ply)
+    local isAlive = plyAlive(client)
 
     -- COMMENT
     if wasAlive and !isAlive then
@@ -77,21 +85,27 @@ hook.Add("Think", "CLegs:ChangeModel", function()
             legEnt:Remove()
         end
     elseif !wasAlive and isAlive then
-        ConstructLegsEnt(ply, legModel)
+        ConstructLegsEnt(client, legModel)
     end
 
     wasAlive = isAlive
 end)
 
 hook.Add("PlayerSwitchWeapon", "CLegs:PlayerSwitchWeapon", function(ply, oldWep, newWep)
-    if ply != LocalPlayer() then return end
+    if ply != LocalPlayer() then
+        return
+    end
 
     timer.Simple(0, function()
-        if oldWep == newWep then return end
+        if oldWep == newWep then
+            return
+        end
 
         local legEnt = ply.LegEnt
 
-        if !IsValid(legEnt) then return end
+        if !aIsValid(legEnt) then
+            return
+        end
 
         legEnt:DoBoneManipulation()
     end)
@@ -100,7 +114,9 @@ end)
 hook.Add("PlayerEnteredVehicle", "CLegs:VehicleSwitch", function(ply, veh)
     local legEnt = ply.LegEnt
 
-    if !IsValid(legEnt) then return end
+    if !aIsValid(legEnt) then
+        return
+    end
 
     legEnt:DoBoneManipulation()
 end)
@@ -108,20 +124,24 @@ end)
 hook.Add("PlayerLeaveVehicle", "CLegs:VehicleSwitch", function(ply, veh)
     local legEnt = ply.LegEnt
 
-    if !IsValid(legEnt) then return end
+    if !aIsValid(legEnt) then
+        return
+    end
 
     legEnt:DoBoneManipulation()
 end)
 
+local pInVehicle = PLAYER.InVehicle
 
 hook.Add("RenderScreenspaceEffects", "CLegs:Render::Vehicle", function()
-    local client = LocalPlayer()
+    client = client or LocalPlayer()
 
-    if client:InVehicle() then
-        local legEnt = client.LegEnt
+    if pInVehicle(client) then
+        local plyTable = eGetTable(client)
+        local legEnt = plyTable.LegEnt
 
-        if IsValid(legEnt) then
-            legEnt:DoRender(true)
+        if aIsValid(legEnt) then
+            legEnt:DoRender(true, plyTable)
         end
     end
 end)
