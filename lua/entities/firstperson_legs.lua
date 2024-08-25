@@ -122,12 +122,12 @@ local legsEnabled = GetConVar("cl_legs")
 local vLegsEnabled = CreateClientConVar("cl_vehlegs", 0, true, false, "Enable/Disable the rendering of the legs in vehicles", 0, 1)
 local pInVehicle = PLAYER.InVehicle
 
-local function ShouldDrawInVehicle(isExternalDraw)
-    if pInVehicle(ply) and isExternalDraw then
-        return legsEnabled:GetBool() and !vLegsEnabled:GetBool()
+local function ShouldDrawInVehicle()
+    if pInVehicle(ply) then
+        return legsEnabled:GetBool() and vLegsEnabled:GetBool()
     end
 
-    return false
+    return true
 end
 
 local function ExternalShouldDraw(plyTable)
@@ -139,7 +139,7 @@ local pGetObserverTarget = PLAYER.GetObserverTarget
 local aGetViewEntity = GetViewEntity
 local aIsValid = IsValid
 
-function ENT:ShouldDraw(isExternalDraw, plyTable)
+function ENT:ShouldDraw(plyTable)
     local shouldDisable = hook.Run("ShouldDisableLegs")
 
     if shouldDisable then
@@ -148,7 +148,7 @@ function ENT:ShouldDraw(isExternalDraw, plyTable)
 
     if legsEnabled:GetBool() then
         return  (pAlive(ply) or (plyTable.IsGhosted and plyTable.IsGhosted(ply)))    and
-                !ShouldDrawInVehicle(isExternalDraw)                                 and
+                ShouldDrawInVehicle()                                                and
                 aGetViewEntity() == ply                                              and
                 !pShouldDrawLocalPlayer(ply)                                         and
                 !aIsValid(pGetObserverTarget(ply))                                   and
@@ -281,13 +281,13 @@ local waterRT = "_rt_waterreflection"
 local dummyRT = "_rt_shadowdummy"
 local cameraRT = "_rt_camera"
 
-function ENT:DoRender(isExternalDraw, plyTable)
+function ENT:DoRender(plyTable)
     plyTable = plyTable or eGetTable(ply)
 
     -- COMMENT
     sShouldDraw = sShouldDraw or self.ShouldDraw
 
-    if !sShouldDraw(self, isExternalDraw, plyTable) then
+    if !sShouldDraw(self, plyTable) then
         return
     end
 
@@ -380,11 +380,5 @@ function ENT:DoRender(isExternalDraw, plyTable)
     eSetRenderAngles(self)
 end
 
-local sDoRender = nil
-
 function ENT:DrawTranslucent(flags)
-    -- COMMENT
-    sDoRender = sDoRender or self.DoRender
-
-    sDoRender(self, false)
 end

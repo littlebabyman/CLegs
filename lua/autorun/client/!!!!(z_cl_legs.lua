@@ -48,7 +48,7 @@ end
 
 local legsEnabled = CreateClientConVar("cl_legs", 1, true, false, "Enable/Disable the rendering of the legs", 0, 1)
 
-hook.Add("InitPostEntity", "CLegs:LegInitialize", function()
+hook.Add("InitPostEntity", "CLegs.Initialize", function()
     timer.Simple(0, function()
         if !legsEnabled:GetBool() then
             return
@@ -64,7 +64,7 @@ local aIsValid = IsValid
 local client = nil
 local wasAlive = false
 
-hook.Add("Think", "CLegs:ChangeModel", function()
+hook.Add("Think", "CLegs.ChangeModel", function()
     client = client or LocalPlayer()
 
     local plyTable = eGetTable(client)
@@ -91,7 +91,7 @@ hook.Add("Think", "CLegs:ChangeModel", function()
     wasAlive = isAlive
 end)
 
-hook.Add("PlayerSwitchWeapon", "CLegs:PlayerSwitchWeapon", function(ply, oldWep, newWep)
+hook.Add("PlayerSwitchWeapon", "CLegs.InvalidateBones", function(ply, oldWep, newWep)
     if ply != LocalPlayer() then
         return
     end
@@ -111,7 +111,7 @@ hook.Add("PlayerSwitchWeapon", "CLegs:PlayerSwitchWeapon", function(ply, oldWep,
     end)
 end)
 
-hook.Add("PlayerEnteredVehicle", "CLegs:VehicleSwitch", function(ply, veh)
+hook.Add("PlayerEnteredVehicle", "CLegs.InvalidateBones", function(ply, veh)
     local legEnt = ply.LegEnt
 
     if !aIsValid(legEnt) then
@@ -121,7 +121,7 @@ hook.Add("PlayerEnteredVehicle", "CLegs:VehicleSwitch", function(ply, veh)
     legEnt:DoBoneManipulation()
 end)
 
-hook.Add("PlayerLeaveVehicle", "CLegs:VehicleSwitch", function(ply, veh)
+hook.Add("PlayerLeaveVehicle", "CLegs.InvalidateBones", function(ply, veh)
     local legEnt = ply.LegEnt
 
     if !aIsValid(legEnt) then
@@ -131,18 +131,24 @@ hook.Add("PlayerLeaveVehicle", "CLegs:VehicleSwitch", function(ply, veh)
     legEnt:DoBoneManipulation()
 end)
 
-local pInVehicle = PLAYER.InVehicle
+local doRenderFunc = nil
 
-hook.Add("RenderScreenspaceEffects", "CLegs:Render::Vehicle", function()
+hook.Add("PostDrawTranslucentRenderables", "CLegs.DoRender", function(bDepth, bSkybox, b3dSkybox)
+    -- If we are drawing in the skybox, bail.
+    -- We do not include our legs in the depth buffer because they were ALWAYS next to our EyePos.
+    if bDepth or bSkybox or b3dSkybox then
+        return
+    end
+
     client = client or LocalPlayer()
 
-    if pInVehicle(client) then
-        local plyTable = eGetTable(client)
-        local legEnt = plyTable.LegEnt
+    local plyTable = eGetTable(client)
+    local legEnt = plyTable.LegEnt
 
-        if aIsValid(legEnt) then
-            legEnt:DoRender(true, plyTable)
-        end
+    if aIsValid(legEnt) then
+        doRenderFunc = doRenderFunc or legEnt.DoRender
+
+        doRenderFunc(legEnt, plyTable)
     end
 end)
 
