@@ -205,8 +205,8 @@ local bodyBones = {
     "ValveBiped.Bip01_R_Finger01",
     "ValveBiped.Bip01_R_Finger02",
     "ValveBiped.Bip01_Neck1",
-    "ValveBiped.Bip01_Spine4"--,
-    -- "ValveBiped.Bip01_Spine2"
+    "ValveBiped.Bip01_Spine4",
+    "ValveBiped.Bip01_Spine2"
 }
 
 local eGetBoneCount = ENTITY.GetBoneCount
@@ -365,15 +365,18 @@ function ENT:DoRender(plyTable)
 
     local renderColor = ply:GetColor()
 
-    -- TODO: Improve clipping in vehicles
+    -- TODO: Improve clipping in vehicles?
     local bEnabled = render.EnableClipping(true)
     render.PushCustomClipPlane(clipVector, clipVector:Dot(eyePos))
-            render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
-                render.SetBlend(renderColor.a / 255)
-                    eDrawModel(self)
-                render.SetBlend(1)
-            render.SetColorModulation(1, 1, 1)
-        render.PopCustomClipPlane()
+    render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
+    render.SetBlend(renderColor.a / 255)
+
+    -- Draw our final legs model.
+    eDrawModel(self)
+
+    render.SetBlend(1)
+    render.SetColorModulation(1, 1, 1)
+    render.PopCustomClipPlane()
     render.EnableClipping(bEnabled)
 
     eSetRenderOrigin(self)
