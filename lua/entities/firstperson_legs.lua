@@ -12,7 +12,7 @@ ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
 
 local PLAYER = FindMetaTable("Player")
 local pGetPlayerColor = PLAYER.GetPlayerColor
-local ply = ply or nil
+local ply = nil
 
 function ENT:Initialize()
     -- COMMENT
@@ -282,6 +282,17 @@ local dummyRT = "_rt_shadowdummy"
 local cameraRT = "_rt_camera"
 
 function ENT:DoRender(plyTable)
+    local rt = render.GetRenderTarget()
+
+    -- WORKAROUND: https://github.com/Facepunch/garrysmod-requests/issues/1943#issuecomment-1039511256
+    if rt then
+        local rtName = sLower(rGetName(rt))
+
+        if rtName == waterRT or rtName == dummyRT or rtName == cameraRT then
+            return
+        end
+    end
+
     plyTable = plyTable or eGetTable(ply)
 
     -- COMMENT
@@ -294,17 +305,6 @@ function ENT:DoRender(plyTable)
     -- COMMENT
     eDrawShadow(self, false)
     eDestroyShadow(self)
-
-    local rt = render.GetRenderTarget()
-
-    -- WORKAROUND: https://github.com/Facepunch/garrysmod-requests/issues/1943#issuecomment-1039511256
-    if rt then
-        local rtName = sLower(rGetName(rt))
-
-        if rtName == waterRT or rtName == dummyRT or rtName == cameraRT then
-            return
-        end
-    end
 
     local inVehicle = pInVehicle(ply)
     local isCrouching = pCrouching(ply)
@@ -335,13 +335,10 @@ function ENT:DoRender(plyTable)
 
         renderPos.x = renderPos.x + math.cos(radAngle) * forwardOffset
         renderPos.y = renderPos.y + math.sin(radAngle) * forwardOffset
+        renderPos.z = renderPos.z + 4
 
-        if eGetGroundEntity(ply) == NULL then
-            renderPos.z = renderPos.z + 4
-
-            if pKeyDown(ply, IN_DUCK) then
-                renderPos.z = renderPos.z - 28
-            end
+        if eGetGroundEntity(ply) == NULL and pKeyDown(ply, IN_DUCK) then
+            renderPos.z = renderPos.z - 28
         end
     end
 
