@@ -118,6 +118,25 @@ function ENT:Think()
     return true
 end
 
+local pGetAllowWeaponsInVehicle = PLAYER.GetAllowWeaponsInVehicle
+local pGetActiveWeapon = PLAYER.GetActiveWeapon
+local eGetClass = ENTITY.GetClass
+local holsterClass = "weaponholster"
+
+local function IsHoldingWeaponInVehicle(ply)
+    if !pGetAllowWeaponsInVehicle(ply) then
+        return false
+    end
+
+    local wep = pGetActiveWeapon(ply)
+
+    if !wep or wep == NULL then
+        return false
+    end
+
+    return eGetClass(wep) != holsterClass
+end
+
 local legsEnabled = GetConVar("cl_legs")
 local vLegsEnabled = CreateClientConVar("cl_vehlegs", 0, true, false, "Enable/Disable the rendering of the legs in vehicles", 0, 1)
 local pInVehicle = PLAYER.InVehicle
@@ -150,6 +169,7 @@ function ENT:ShouldDraw(plyTable)
         return  (pAlive(ply) or (plyTable.IsGhosted and plyTable.IsGhosted(ply)))    and
                 ShouldDrawInVehicle()                                                and
                 aGetViewEntity() == ply                                              and
+                !IsHoldingWeaponInVehicle(ply)                                       and
                 !pShouldDrawLocalPlayer(ply)                                         and
                 !aIsValid(pGetObserverTarget(ply))                                   and
                 !ExternalShouldDraw(plyTable)                                        and
