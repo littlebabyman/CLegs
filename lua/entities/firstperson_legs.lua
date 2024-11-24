@@ -73,7 +73,7 @@ function ENT:Think()
     -- COMMENT
     eSnatchModelInstance(self, ply)
 
-    -- FIXME: https://github.com/Facepunch/garrysmod-requests/issues/1723
+    -- ISSUE: https://github.com/Facepunch/garrysmod-requests/issues/1723
     if haveLayeredSequencesBeenFixed then
         self:CopyLayerSequenceInfo(0, ply)
         self:CopyLayerSequenceInfo(1, ply)
@@ -225,8 +225,8 @@ local bodyBones = {
     "ValveBiped.Bip01_R_Finger01",
     "ValveBiped.Bip01_R_Finger02",
     "ValveBiped.Bip01_Neck1",
-    "ValveBiped.Bip01_Spine4",
-    "ValveBiped.Bip01_Spine2"
+    "ValveBiped.Bip01_Spine4"
+    -- "ValveBiped.Bip01_Spine2"
 }
 
 local eGetBoneCount = ENTITY.GetBoneCount
@@ -239,8 +239,6 @@ local scaleVector, posVector = Vector(1, 1, 1), Vector(0, -128, 0)
 
 function ENT:DoBoneManipulation()
     for i = 0, eGetBoneCount(self) do
-        -- print("reseting bone: ", i)
-
         eManipulateBoneScale(self, i, scaleVector)
         eManipulateBonePosition(self, i, vector_origin)
     end
@@ -256,7 +254,7 @@ function ENT:DoBoneManipulation()
         local boneID = bonesToRemove[i]
         local bone = eLookupBone(self, boneID)
 
-        -- FIXME: bone stretching sucks (do custom clip plane?)
+        -- TODO: Bone stretching is awful, find a better solution?
         if bone then
             eManipulateBoneScale(self, bone, vector_origin)
 
@@ -288,12 +286,13 @@ local eGetAngles = ENTITY.GetAngles
 local eEyeAngles = ENTITY.EyeAngles
 local eGetGroundEntity = ENTITY.GetGroundEntity
 local pKeyDown = PLAYER.KeyDown
+local eGetMoveType = ENTITY.GetMoveType
 local eSetRenderOrigin = ENTITY.SetRenderOrigin
 local eSetRenderAngles = ENTITY.SetRenderAngles
 local eSetupBones = ENTITY.SetupBones
 local eDrawModel = ENTITY.DrawModel
-local legsOffset = CreateClientConVar("cl_legs_offset", 17, true, false, "Offset of legs from you.", 10, 30)
-local legsAngle = CreateClientConVar("cl_legs_angle", 5, true, false, "Angle of legs model.", 0, 10)
+local legsOffset = CreateClientConVar("cl_legs_offset", 22, true, false, "Offset of legs from you.", 0, 30)
+local legsAngle = CreateClientConVar("cl_legs_angle", 0, true, false, "Angle of legs model.", -10, 10)
 local renderPos = Vector(0, 0, 3)
 local renderAng = Angle(-3, 0, 0)
 local clipVector = vector_up * -1
@@ -336,7 +335,6 @@ function ENT:DoRender(plyTable)
         local angleOffset = legsAngle:GetFloat()
 
         renderAng.x = -angleOffset
-
         renderPos.z = (renderPos.z - angleOffset * 0.2) + 5
     end
 
@@ -344,20 +342,20 @@ function ENT:DoRender(plyTable)
         renderAng:Set(eGetAngles(pGetVehicle(ply)))
         renderAng:RotateAroundAxis(renderAng:Up(), 90)
     else
-        -- y'all need to stop using sharpeye holy shit
-        -- Original code: sharpeye_focus and sharpeye_focus.GetBiaisViewAngles and sharpeye_focus:GetBiaisViewAngles() or ply:EyeAngles()
-        local biaisAngles = eEyeAngles(ply)
+        -- Stop using sharpeye it sucks
+        -- If you are an idiot and want compatibility, replace with var = sharpeye_focus and sharpeye_focus.GetBiaisViewAngles and sharpeye_focus:GetBiaisViewAngles() or ply:EyeAngles()
+        local eyeAngles = eEyeAngles(ply)
 
-        renderAng.y = biaisAngles.y
+        renderAng.y = eyeAngles.y
 
-        local radAngle = math.rad(biaisAngles.y)
+        local radAngle = math.rad(eyeAngles.y)
         local forwardOffset = -legsOffset:GetFloat()
 
         renderPos.x = renderPos.x + math.cos(radAngle) * forwardOffset
         renderPos.y = renderPos.y + math.sin(radAngle) * forwardOffset
         renderPos.z = renderPos.z + 4
 
-        if eGetGroundEntity(ply) == NULL and pKeyDown(ply, IN_DUCK) then
+        if eGetGroundEntity(ply) == NULL and pKeyDown(ply, IN_DUCK) and eGetMoveType(ply) != MOVETYPE_NOCLIP then
             renderPos.z = renderPos.z - 28
         end
     end
@@ -370,13 +368,12 @@ function ENT:DoRender(plyTable)
 
     local eyePos = EyePos()
 
-    -- When we're too close to camera, render our model as half-visible.
+    -- When we're too close to our EyePos, render our model as half-visible.
     if isCrouching then
         render.SetBlend(0.33)
 
         eDrawModel(self)
 
-        -- clipOffset: Vector(0, 0, -12)
         eyePos.z = eyePos.z - 12
     end
 
@@ -384,6 +381,8 @@ function ENT:DoRender(plyTable)
 
     -- TODO: Improve clipping in vehicles?
     local bEnabled = render.EnableClipping(true)
+
+    -- Clips the upper half of the model.
     render.PushCustomClipPlane(clipVector, clipVector:Dot(eyePos))
     render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
     render.SetBlend(renderColor.a / 255)

@@ -1,9 +1,12 @@
 local ENTITY = FindMetaTable("Entity")
 local entityGetModel = ENTITY.GetModel
+local eGetTable = ENTITY.GetTable
 
 local function GetLegModel(ply, plyTable)
     if CLIENT then
         local client = LocalPlayer()
+
+        plyTable = plyTable or eGetTable(ply)
 
         if plyTable.enforce_model then
             return plyTable.enforce_model
@@ -17,20 +20,17 @@ function GetPlayerLegs(ply)
     local client = LocalPlayer()
 
     if ply and ply != client then
-        return ply
+        return
     end
 
     local legEnt = ply.LegEnt
 
-    if IsValid(legEnt) then
-        return legEnt:ShouldDraw() and legEnt or client
-    end
+    return legEnt
 end
 
-local eGetTable = ENTITY.GetTable
+local function ConstructLegsEnt(ply, legModel, plyTable)
+    plyTable = plyTable or eGetTable(ply)
 
-local function ConstructLegsEnt(ply, legModel)
-    local plyTable = eGetTable(ply)
     local oldLegEnt = plyTable.LegEnt
 
     if IsValid(oldLegEnt) then
@@ -72,7 +72,7 @@ hook.Add("Think", "CLegs.ChangeModel", function()
     local legsValid = aIsValid(legEnt)
 
     if legsValid and legModel != entityGetModel(legEnt) then
-        ConstructLegsEnt(client, legModel)
+        ConstructLegsEnt(client, legModel, plyTable)
 
         return
     end
@@ -85,7 +85,7 @@ hook.Add("Think", "CLegs.ChangeModel", function()
             legEnt:Remove()
         end
     elseif !wasAlive and isAlive then
-        ConstructLegsEnt(client, legModel)
+        ConstructLegsEnt(client, legModel, plyTable)
     end
 
     wasAlive = isAlive
@@ -134,9 +134,10 @@ end)
 local doRenderFunc = nil
 
 hook.Add("PostDrawTranslucentRenderables", "CLegs.DoRender", function(bDepth, bSkybox, b3dSkybox)
-    -- If we are drawing in the skybox, bail.
+    -- If we are attempting to draw in the skybox, don't.
     -- We do not include our legs in the depth buffer because they were ALWAYS next to our EyePos.
-    if bDepth or bSkybox or b3dSkybox then
+    -- bDepth or 
+    if bSkybox or b3dSkybox then
         return
     end
 
@@ -169,13 +170,11 @@ concommand.Add("cl_refreshlegs", function(ply, cmd, args, argStr)
 end)
 
 local function LegsSettings(panel)
-    panel:Help("Toggles - [CLIENT]")
-
+    panel:Help("Toggles")
     panel:CheckBox("Enable rendering of Legs?", "cl_legs")
     panel:CheckBox("Enable rendering of Legs in vehicles?", "cl_vehlegs")
 
-    panel:Help("Offsets - [CLIENT]")
-
+    panel:Help("Offsets")
     panel:NumSlider("Camera Offset", "cl_legs_offset", 10, 30, 1)
     panel:NumSlider("Legs Angle", "cl_legs_angle", 0, 15, 1)
 end
