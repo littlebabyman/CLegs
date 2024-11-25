@@ -1,11 +1,10 @@
 local ENTITY = FindMetaTable("Entity")
 local entityGetModel = ENTITY.GetModel
 local eGetTable = ENTITY.GetTable
+local client, legEnt = nil
 
 local function GetLegModel(ply, plyTable)
     if CLIENT then
-        local client = LocalPlayer()
-
         plyTable = plyTable or eGetTable(ply)
 
         if plyTable.enforce_model then
@@ -23,23 +22,23 @@ function GetPlayerLegs(ply)
         return
     end
 
-    local legEnt = ply.LegEnt
-
     return legEnt
 end
 
 local function ConstructLegsEnt(ply, legModel, plyTable)
+    client = ply
+
     plyTable = plyTable or eGetTable(ply)
 
-    local oldLegEnt = plyTable.LegEnt
+    if IsValid(legEnt) then
+        plyTable.LegEnt = nil
 
-    if IsValid(oldLegEnt) then
-        oldLegEnt:Remove()
+        legEnt:Remove()
     end
 
     legModel = legModel or GetLegModel(ply, plyTable)
 
-    local legEnt = ents.CreateClientside("firstperson_legs")
+    legEnt = ents.CreateClientside("firstperson_legs")
     legEnt:SetModel(legModel)
     legEnt:Spawn()
 
@@ -61,14 +60,13 @@ end)
 local PLAYER = FindMetaTable("Player")
 local plyAlive = PLAYER.Alive
 local aIsValid = IsValid
-local client = nil
 local wasAlive = false
 
 hook.Add("Think", "CLegs.ChangeModel", function()
     client = client or LocalPlayer()
 
     local plyTable = eGetTable(client)
-    local legEnt, legModel = plyTable.LegEnt, GetLegModel(client, plyTable)
+    local legModel = GetLegModel(client, plyTable)
     local legsValid = aIsValid(legEnt)
 
     if legsValid and legModel != entityGetModel(legEnt) then
@@ -82,6 +80,8 @@ hook.Add("Think", "CLegs.ChangeModel", function()
     -- COMMENT
     if wasAlive and !isAlive then
         if legsValid then
+            plyTable.LegEnt = nil
+
             legEnt:Remove()
         end
     elseif !wasAlive and isAlive then
@@ -101,8 +101,6 @@ hook.Add("PlayerSwitchWeapon", "CLegs.InvalidateBones", function(ply, oldWep, ne
             return
         end
 
-        local legEnt = ply.LegEnt
-
         if !aIsValid(legEnt) then
             return
         end
@@ -112,8 +110,6 @@ hook.Add("PlayerSwitchWeapon", "CLegs.InvalidateBones", function(ply, oldWep, ne
 end)
 
 hook.Add("PlayerEnteredVehicle", "CLegs.InvalidateBones", function(ply, veh)
-    local legEnt = ply.LegEnt
-
     if !aIsValid(legEnt) then
         return
     end
@@ -122,8 +118,6 @@ hook.Add("PlayerEnteredVehicle", "CLegs.InvalidateBones", function(ply, veh)
 end)
 
 hook.Add("PlayerLeaveVehicle", "CLegs.InvalidateBones", function(ply, veh)
-    local legEnt = ply.LegEnt
-
     if !aIsValid(legEnt) then
         return
     end
@@ -144,11 +138,9 @@ hook.Add("PostDrawTranslucentRenderables", "CLegs.DoRender", function(bDepth, bS
     client = client or LocalPlayer()
 
     local plyTable = eGetTable(client)
-    local legEnt = plyTable.LegEnt
 
     if aIsValid(legEnt) then
         doRenderFunc = doRenderFunc or legEnt.DoRender
-
         doRenderFunc(legEnt, plyTable)
     end
 end)

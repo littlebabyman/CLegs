@@ -18,7 +18,8 @@ function ENT:Initialize()
     -- COMMENT
     ply = LocalPlayer()
 
-    self:SetRenderMode(RENDERMODE_NORMAL)
+    self.RenderPos = Vector(0, 0, 3)
+    self.RenderAng = Angle(-3, 0, 0)
 
     local materials = ply:GetMaterials()
 
@@ -35,6 +36,7 @@ function ENT:Initialize()
 
     self:DrawShadow(false)
     self:SetAutomaticFrameAdvance(true)
+    self:SetRenderMode(RENDERMODE_NORMAL)
     self:SetMoveType(MOVETYPE_NONE)
     self:DestroyShadow()
 
@@ -150,7 +152,8 @@ local function ShouldDrawInVehicle()
 end
 
 local function ExternalShouldDraw(plyTable)
-    return VWallrunning or inmantle or (pk_pills and pk_pills.getMappedEnt(ply)) or (plyTable.IsProne and plyTable.IsProne(ply))
+    -- TODO: Is prone mod compatible?
+    return VWallrunning or inmantle or (pk_pills and pk_pills.getMappedEnt(ply)) or (plyTable.IsProne and plyTable.IsProne(ply)) or (VManip and VMLegs:IsActive())
 end
 
 local pShouldDrawLocalPlayer = PLAYER.ShouldDrawLocalPlayer
@@ -274,27 +277,61 @@ function ENT:CopyLayerSequenceInfo(layer, fromEnt)
     self:SetLayerCycle(layer, fromEnt:GetLayerCycle(layer))
 end
 
-local eGetTable = ENTITY.GetTable
-local sShouldDraw = nil
-local eDrawShadow = ENTITY.DrawShadow
-local eDestroyShadow = ENTITY.DestroyShadow
-local rGetName = FindMetaTable("ITexture").GetName
-local sLower = string.lower
-local pCrouching = PLAYER.Crouching
+local eIsFlagSet = ENTITY.IsFlagSet
 local pGetVehicle = PLAYER.GetVehicle
 local eGetAngles = ENTITY.GetAngles
 local eEyeAngles = ENTITY.EyeAngles
 local eGetGroundEntity = ENTITY.GetGroundEntity
 local pKeyDown = PLAYER.KeyDown
 local eGetMoveType = ENTITY.GetMoveType
+local legsOffset = CreateClientConVar("cl_legs_offset", 22, true, false, "Offset of legs from you.", 0, 30)
+local legsAngle = CreateClientConVar("cl_legs_angle", 0, true, false, "Angle of legs model.", -10, 10)
+
+function ENT:ApplyRenderOffset(pos, ang)
+    local inVehicle = pInVehicle(ply)
+    local isCrouching = eIsFlagSet(ply, FL_DUCKING)
+
+    if !isCrouching and !inVehicle then
+        local angleOffset = legsAngle:GetFloat()
+
+        ang.x = -angleOffset
+        pos.z = (pos.z - angleOffset * 0.2) + 5
+    end
+
+    if inVehicle then
+        ang:Set(eGetAngles(pGetVehicle(ply)))
+        ang:RotateAroundAxis(ang:Up(), 90)
+    else
+        -- Stop using sharpeye it sucks
+        -- If you are an idiot and want compatibility, replace with var = sharpeye_focus and sharpeye_focus.GetBiaisViewAngles and sharpeye_focus:GetBiaisViewAngles() or ply:EyeAngles()
+        local eyeAngles = eEyeAngles(ply)
+
+        ang.y = eyeAngles.y
+
+        local radAngle = math.rad(eyeAngles.y)
+        local forwardOffset = -legsOffset:GetFloat()
+
+        pos.x = pos.x + math.cos(radAngle) * forwardOffset
+        pos.y = pos.y + math.sin(radAngle) * forwardOffset
+        pos.z = pos.z + 4
+
+        if eGetGroundEntity(ply) == NULL and pKeyDown(ply, IN_DUCK) and eGetMoveType(ply) != MOVETYPE_NOCLIP then
+            pos.z = pos.z - 28
+        end
+    end
+end
+
+local sShouldDraw = nil
+local sApplyRenderOffset = nil
+local eGetTable = ENTITY.GetTable
+local eDrawShadow = ENTITY.DrawShadow
+local eDestroyShadow = ENTITY.DestroyShadow
+local rGetName = FindMetaTable("ITexture").GetName
+local sLower = string.lower
 local eSetRenderOrigin = ENTITY.SetRenderOrigin
 local eSetRenderAngles = ENTITY.SetRenderAngles
 local eSetupBones = ENTITY.SetupBones
 local eDrawModel = ENTITY.DrawModel
-local legsOffset = CreateClientConVar("cl_legs_offset", 22, true, false, "Offset of legs from you.", 0, 30)
-local legsAngle = CreateClientConVar("cl_legs_angle", 0, true, false, "Angle of legs model.", -10, 10)
-local renderPos = Vector(0, 0, 3)
-local renderAng = Angle(-3, 0, 0)
 local clipVector = vector_up * -1
 local waterRT = "_rt_waterreflection"
 local dummyRT = "_rt_shadowdummy"
@@ -312,60 +349,38 @@ function ENT:DoRender(plyTable)
         end
     end
 
+    local legsTable = eGetTable(self)
+
     plyTable = plyTable or eGetTable(ply)
 
     -- COMMENT
-    sShouldDraw = sShouldDraw or self.ShouldDraw
+    sShouldDraw = sShouldDraw or legsTable.ShouldDraw
 
     if !sShouldDraw(self, plyTable) then
+        legsTable.DidDraw = false
+
         return
     end
+
+    legsTable.DidDraw = true
 
     -- COMMENT
     eDrawShadow(self, false)
     eDestroyShadow(self)
 
-    local inVehicle = pInVehicle(ply)
-    local isCrouching = pCrouching(ply)
+    legsTable.RenderPos:Set(eGetPos(ply))
+    legsTable.RenderAng:Zero()
 
-    renderPos:Set(eGetPos(ply))
-    renderAng:Zero()
+    sApplyRenderOffset = sApplyRenderOffset or legsTable.ApplyRenderOffset
+    sApplyRenderOffset(self, legsTable.RenderPos, legsTable.RenderAng)
 
-    if !isCrouching and !inVehicle then
-        local angleOffset = legsAngle:GetFloat()
-
-        renderAng.x = -angleOffset
-        renderPos.z = (renderPos.z - angleOffset * 0.2) + 5
-    end
-
-    if inVehicle then
-        renderAng:Set(eGetAngles(pGetVehicle(ply)))
-        renderAng:RotateAroundAxis(renderAng:Up(), 90)
-    else
-        -- Stop using sharpeye it sucks
-        -- If you are an idiot and want compatibility, replace with var = sharpeye_focus and sharpeye_focus.GetBiaisViewAngles and sharpeye_focus:GetBiaisViewAngles() or ply:EyeAngles()
-        local eyeAngles = eEyeAngles(ply)
-
-        renderAng.y = eyeAngles.y
-
-        local radAngle = math.rad(eyeAngles.y)
-        local forwardOffset = -legsOffset:GetFloat()
-
-        renderPos.x = renderPos.x + math.cos(radAngle) * forwardOffset
-        renderPos.y = renderPos.y + math.sin(radAngle) * forwardOffset
-        renderPos.z = renderPos.z + 4
-
-        if eGetGroundEntity(ply) == NULL and pKeyDown(ply, IN_DUCK) and eGetMoveType(ply) != MOVETYPE_NOCLIP then
-            renderPos.z = renderPos.z - 28
-        end
-    end
-
-    eSetRenderOrigin(self, renderPos)
-    eSetRenderAngles(self, renderAng)
+    eSetRenderOrigin(self, legsTable.RenderPos)
+    eSetRenderAngles(self, legsTable.RenderAng)
 
     -- We have to do this, probably due to us manually drawing the entity multiple times.
     eSetupBones(self)
 
+    local isCrouching = eIsFlagSet(ply, FL_DUCKING)
     local eyePos = EyePos()
 
     -- When we're too close to our EyePos, render our model as half-visible.
@@ -378,21 +393,20 @@ function ENT:DoRender(plyTable)
     end
 
     local renderColor = ply:GetColor()
-
-    -- TODO: Improve clipping in vehicles?
     local bEnabled = render.EnableClipping(true)
 
     -- Clips the upper half of the model.
     render.PushCustomClipPlane(clipVector, clipVector:Dot(eyePos))
-    render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
-    render.SetBlend(renderColor.a / 255)
+        render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
+            render.SetBlend(renderColor.a / 255)
 
-    -- Draw our final legs model.
-    eDrawModel(self)
+            -- Draw our final legs model.
+            eDrawModel(self)
 
-    render.SetBlend(1)
-    render.SetColorModulation(1, 1, 1)
+            render.SetBlend(1)
+        render.SetColorModulation(1, 1, 1)
     render.PopCustomClipPlane()
+
     render.EnableClipping(bEnabled)
 
     eSetRenderOrigin(self)
