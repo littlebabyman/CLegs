@@ -188,7 +188,6 @@ local headBone = {
 }
 
 local bodyBones = {
-    "ValveBiped.Bip01_Head1",
     "ValveBiped.Bip01_L_Hand",
     "ValveBiped.Bip01_L_Forearm",
     "ValveBiped.Bip01_L_Upperarm",
@@ -227,6 +226,7 @@ local bodyBones = {
     "ValveBiped.Bip01_R_Finger0",
     "ValveBiped.Bip01_R_Finger01",
     "ValveBiped.Bip01_R_Finger02",
+    "ValveBiped.Bip01_Head1",
     "ValveBiped.Bip01_Neck1",
     "ValveBiped.Bip01_Spine4"
     -- "ValveBiped.Bip01_Spine2"
@@ -315,8 +315,12 @@ function ENT:ApplyRenderOffset(pos, ang)
         pos.y = pos.y + math.sin(radAngle) * forwardOffset
         pos.z = pos.z + 4
 
-        if eGetGroundEntity(ply) == NULL and pKeyDown(ply, IN_DUCK) and eGetMoveType(ply) != MOVETYPE_NOCLIP then
-            pos.z = pos.z - 28
+        if eGetGroundEntity(ply) == NULL then
+            pos.z = pos.z + 8
+
+            if pKeyDown(ply, IN_DUCK) and eGetMoveType(ply) != MOVETYPE_NOCLIP then
+                pos.z = pos.z - 28
+            end
         end
     end
 end
