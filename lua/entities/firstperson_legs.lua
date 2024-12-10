@@ -140,7 +140,7 @@ local function IsHoldingWeaponInVehicle(ply)
 end
 
 local legsEnabled = GetConVar("cl_legs")
-local vLegsEnabled = CreateClientConVar("cl_vehlegs", 0, true, false, "Enable/Disable the rendering of the legs in vehicles", 0, 1)
+local vLegsEnabled = CreateClientConVar("cl_vehlegs", 1, true, false, "Enable/Disable the rendering of the legs in vehicles", 0, 1)
 local pInVehicle = PLAYER.InVehicle
 
 local function ShouldDrawInVehicle()
