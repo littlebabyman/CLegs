@@ -281,7 +281,6 @@ local eIsFlagSet = ENTITY.IsFlagSet
 local pGetVehicle = PLAYER.GetVehicle
 local eGetAngles = ENTITY.GetAngles
 local eEyeAngles = ENTITY.EyeAngles
-local eGetGroundEntity = ENTITY.GetGroundEntity
 local pKeyDown = PLAYER.KeyDown
 local eGetMoveType = ENTITY.GetMoveType
 local legsOffset = CreateClientConVar("cl_legs_offset", 22, true, false, "Offset of legs from you.", 0, 30)
@@ -315,12 +314,10 @@ function ENT:ApplyRenderOffset(pos, ang)
         pos.y = pos.y + math.sin(radAngle) * forwardOffset
         pos.z = pos.z + 4
 
-        if eGetGroundEntity(ply) == NULL then
-            pos.z = pos.z + 8
-
-            if pKeyDown(ply, IN_DUCK) and eGetMoveType(ply) != MOVETYPE_NOCLIP then
-                pos.z = pos.z - 28
-            end
+        -- If we're crouching in the air and not noclipped, apply our duck offset.
+        -- This prevents our legs from shifting downwards a lot.
+        if !eIsFlagSet(ply, FL_ONGROUND) and isCrouching and eGetMoveType(ply) != MOVETYPE_NOCLIP then
+            pos.z = pos.z - 28
         end
     end
 end
