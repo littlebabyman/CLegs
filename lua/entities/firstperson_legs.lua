@@ -224,10 +224,23 @@ local bodyBones = {
     "ValveBiped.Bip01_R_Finger0",
     "ValveBiped.Bip01_R_Finger01",
     "ValveBiped.Bip01_R_Finger02",
+    "ValveBiped.Bip01_L_Wrist",
+    "ValveBiped.Bip01_L_Ulna",
+    "ValveBiped.Bip01_R_Wrist",
+    "ValveBiped.Bip01_R_Ulna",
     "ValveBiped.Bip01_Head1",
     "ValveBiped.Bip01_Neck1",
-    "ValveBiped.Bip01_Spine4"
-    -- "ValveBiped.Bip01_Spine2"
+    "ValveBiped.Bip01_Spine4",
+    "ValveBiped.Bip01_Spine2"
+}
+
+local safeScaleBones = {
+    ["ValveBiped.Bip01_Spine4"] = true,
+    ["ValveBiped.Bip01_Spine2"] = true,
+    ["ValveBiped.Bip01_L_Clavicle"] = true,
+    ["ValveBiped.Bip01_R_Clavicle"] = true,
+    ["ValveBiped.Bip01_Head1"] = true,
+    ["ValveBiped.Bip01_Neck1"] = true
 }
 
 local eGetBoneCount = ENTITY.GetBoneCount
@@ -236,11 +249,12 @@ local eManipulateBonePosition = ENTITY.ManipulateBonePosition
 local eManipulateBoneAngles = ENTITY.ManipulateBoneAngles
 local eLookupBone = ENTITY.LookupBone
 local bodyBonesCount = #bodyBones
-local scaleVector, posVector = Vector(1, 1, 1), Vector(0, -128, 0)
+local normalScale, hidePos = Vector(1, 1, 1), Vector(0, -32, 0)
+local infScale = Vector(math.huge, math.huge, math.huge)
 
 function ENT:DoBoneManipulation()
     for i = 0, eGetBoneCount(self) do
-        eManipulateBoneScale(self, i, scaleVector)
+        eManipulateBoneScale(self, i, normalScale)
         eManipulateBonePosition(self, i, vector_origin)
     end
 
@@ -257,10 +271,12 @@ function ENT:DoBoneManipulation()
 
         -- TODO: Bone stretching is awful, find a better solution?
         if bone then
-            eManipulateBoneScale(self, bone, vector_origin)
+            local scale = safeScaleBones[boneID] and vector_origin or infScale
 
-            if !inVehicle then
-                eManipulateBonePosition(self, bone, posVector)
+            eManipulateBoneScale(self, bone, scale)
+
+            if !inVehicle and safeScaleBones[boneID] then
+                eManipulateBonePosition(self, bone, hidePos)
                 eManipulateBoneAngles(self, bone, angle_zero)
             end
         end
