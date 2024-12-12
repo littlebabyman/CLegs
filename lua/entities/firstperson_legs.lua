@@ -45,7 +45,6 @@ function ENT:Initialize()
 end
 
 local ENTITY = FindMetaTable("Entity")
-local eGetModelScale, eSetModelScale = ENTITY.GetModelScale, ENTITY.SetModelScale
 local eGetRenderFX, eSetRenderFX = ENTITY.GetRenderFX, ENTITY.SetRenderFX
 local eGetPos, eSetPos = ENTITY.GetPos, ENTITY.SetPos
 local pGetRenderAngles, eSetAngles = PLAYER.GetRenderAngles, ENTITY.SetAngles
@@ -66,7 +65,6 @@ local wasAlive = false
 local lastBodygroupApply = 0
 
 function ENT:Think()
-    eSetModelScale(self, eGetModelScale(ply))
     eSetRenderFX(self, eGetRenderFX(ply))
     eSetPos(self, eGetPos(ply))
     eSetAngles(self, pGetRenderAngles(ply))
@@ -281,7 +279,6 @@ local eIsFlagSet = ENTITY.IsFlagSet
 local pGetVehicle = PLAYER.GetVehicle
 local eGetAngles = ENTITY.GetAngles
 local eEyeAngles = ENTITY.EyeAngles
-local pKeyDown = PLAYER.KeyDown
 local eGetMoveType = ENTITY.GetMoveType
 local legsOffset = CreateClientConVar("cl_legs_offset", 22, true, false, "Offset of legs from you.", 0, 30)
 local legsAngle = CreateClientConVar("cl_legs_angle", 0, true, false, "Angle of legs model.", -10, 10)
