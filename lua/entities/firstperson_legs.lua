@@ -291,13 +291,24 @@ function ENT:CopyLayerSequenceInfo(layer, fromEnt)
     self:SetLayerCycle(layer, fromEnt:GetLayerCycle(layer))
 end
 
+local pGetViewOffset = PLAYER.GetViewOffset
+local pGetViewOffsetDucked = PLAYER.GetViewOffsetDucked
+local pGetCurrentViewOffset = PLAYER.GetCurrentViewOffset
+
+local function GetDuckFraction(ply)
+    local standingViewOffset, currentViewOffset = pGetViewOffset(ply), pGetCurrentViewOffset(ply)
+    local heightDifference = standingViewOffset.z - pGetViewOffsetDucked(ply).z
+
+    return (standingViewOffset.z - currentViewOffset.z) / heightDifference
+end
+
 local eIsFlagSet = ENTITY.IsFlagSet
 local pGetVehicle = PLAYER.GetVehicle
 local eGetAngles = ENTITY.GetAngles
 local eEyeAngles = ENTITY.EyeAngles
 local eGetMoveType = ENTITY.GetMoveType
 local legsOffset = CreateClientConVar("cl_legs_offset", 22, true, false, "Offset of legs from you.", 0, 30)
-local legsAngle = CreateClientConVar("cl_legs_angle", 0, true, false, "Angle of legs model.", -10, 10)
+local legsAngle = CreateClientConVar("cl_legs_angle", 2.5, true, false, "Angle of legs.", -10, 10)
 
 function ENT:ApplyRenderOffset(pos, ang)
     local inVehicle = pInVehicle(ply)
@@ -307,7 +318,7 @@ function ENT:ApplyRenderOffset(pos, ang)
         local angleOffset = legsAngle:GetFloat()
 
         ang.x = -angleOffset
-        pos.z = (pos.z - angleOffset * 0.2) + 5
+        pos.z = Lerp(crouchProgress, (pos.z - angleOffset * 0.2) + 8, pos.z)
     end
 
     if inVehicle then
@@ -325,7 +336,6 @@ function ENT:ApplyRenderOffset(pos, ang)
 
         pos.x = pos.x + math.cos(radAngle) * forwardOffset
         pos.y = pos.y + math.sin(radAngle) * forwardOffset
-        pos.z = pos.z + 4
 
         -- If we're crouching in the air and not noclipped, apply our duck offset.
         -- This prevents our legs from shifting downwards a lot.
