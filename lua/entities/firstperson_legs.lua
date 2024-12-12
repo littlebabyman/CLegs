@@ -315,6 +315,7 @@ function ENT:ApplyRenderOffset(pos, ang)
     local isCrouching = eIsFlagSet(ply, FL_DUCKING)
 
     if !isCrouching and !inVehicle then
+        local crouchProgress = GetDuckFraction(ply)
         local angleOffset = legsAngle:GetFloat()
 
         ang.x = -angleOffset
