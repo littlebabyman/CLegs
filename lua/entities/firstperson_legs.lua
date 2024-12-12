@@ -331,7 +331,7 @@ local rGetName = FindMetaTable("ITexture").GetName
 local sLower = string.lower
 local eSetRenderOrigin = ENTITY.SetRenderOrigin
 local eSetRenderAngles = ENTITY.SetRenderAngles
-local eSetupBones = ENTITY.SetupBones
+local eGetColor = ENTITY.GetColor
 local eDrawModel = ENTITY.DrawModel
 local clipVector = vector_up * -1
 local waterRT = "_rt_waterreflection"
@@ -378,42 +378,22 @@ function ENT:DoRender(plyTable)
     eSetRenderOrigin(self, legsTable.RenderPos)
     eSetRenderAngles(self, legsTable.RenderAng)
 
-    -- We have to do this, probably due to us manually drawing the entity multiple times.
-    eSetupBones(self)
-
-    local renderColor = ply:GetColor()
-
-    render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
-
-    local isCrouching = eIsFlagSet(ply, FL_DUCKING)
-    local eyePos = EyePos()
-
-    -- When we're too close to our EyePos, render our model as half-visible.
-    -- This works because the custom clip plane is not applied yet.
-    -- Therefore the clipped verts in our final draw are "overriden" by the ones from this DrawModel call.
-    if isCrouching then
-        render.SetBlend(0.50)
-
-        eDrawModel(self)
-
-        eyePos.z = eyePos.z - 12
-    end
-
-    local renderColor = ply:GetColor()
+    local renderColor, eyePos = eGetColor(ply), EyePos()
     local bEnabled = render.EnableClipping(true)
 
     -- Clips the upper half of the model.
     render.PushCustomClipPlane(clipVector, clipVector:Dot(eyePos))
-        render.SetBlend(renderColor.a / 255)
+        render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
+            render.SetBlend(renderColor.a / 255)
 
-        -- Draw our final legs model.
-        eDrawModel(self)
+            -- Draw our final legs model.
+            eDrawModel(self)
 
-        render.SetBlend(1)
+            render.SetBlend(1)
+        render.SetColorModulation(1, 1, 1)
     render.PopCustomClipPlane()
 
     render.EnableClipping(bEnabled)
-    render.SetColorModulation(1, 1, 1)
 
     eSetRenderOrigin(self)
     eSetRenderAngles(self)
