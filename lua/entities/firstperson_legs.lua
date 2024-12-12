@@ -352,6 +352,12 @@ function ENT:DoRender(plyTable)
 
     local legsTable = eGetTable(self)
 
+    legsTable.RenderPos:Set(eGetPos(ply))
+    legsTable.RenderAng:Zero()
+
+    sApplyRenderOffset = sApplyRenderOffset or legsTable.ApplyRenderOffset
+    sApplyRenderOffset(self, legsTable.RenderPos, legsTable.RenderAng)
+
     plyTable = plyTable or eGetTable(ply)
 
     -- COMMENT
@@ -368,12 +374,6 @@ function ENT:DoRender(plyTable)
     -- COMMENT
     eDrawShadow(self, false)
     eDestroyShadow(self)
-
-    legsTable.RenderPos:Set(eGetPos(ply))
-    legsTable.RenderAng:Zero()
-
-    sApplyRenderOffset = sApplyRenderOffset or legsTable.ApplyRenderOffset
-    sApplyRenderOffset(self, legsTable.RenderPos, legsTable.RenderAng)
 
     eSetRenderOrigin(self, legsTable.RenderPos)
     eSetRenderAngles(self, legsTable.RenderAng)
