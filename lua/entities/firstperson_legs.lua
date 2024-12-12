@@ -398,3 +398,7 @@ end
 
 function ENT:DrawTranslucent(flags)
 end
+
+function ENT:OnReloaded()
+    ply = LocalPlayer()
+end
