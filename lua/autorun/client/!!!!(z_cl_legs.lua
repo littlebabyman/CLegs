@@ -145,34 +145,28 @@ hook.Add("PostDrawTranslucentRenderables", "CLegs.DoRender", function(bDepth, bS
     end
 end)
 
-concommand.Add("cl_togglelegs", function(ply, cmd, args, argStr)
+concommand.Add("cl_clegs_toggle", function(ply, cmd, args, argStr)
     local newToggle = legsEnabled:GetBool() and 0 or 1
 
     RunConsoleCommand("cl_legs", newToggle)
 end)
 
-concommand.Add("cl_togglevlegs", function(ply, cmd, args, argStr)
-    local newToggle = vLegsEnabled:GetBool() and 0 or 1
-
-    RunConsoleCommand("cl_vehlegs", newToggle)
-end)
-
-concommand.Add("cl_refreshlegs", function(ply, cmd, args, argStr)
+concommand.Add("cl_clegs_refresh", function(ply, cmd, args, argStr)
     ConstructLegsEnt(ply)
 end)
 
 local function LegsSettings(panel)
     panel:Help("Toggles")
-    panel:CheckBox("Enable rendering of Legs?", "cl_legs")
-    panel:CheckBox("Enable rendering of Legs in vehicles?", "cl_vehlegs")
+    panel:CheckBox("Enable legs rendering?", "cl_legs")
+    panel:CheckBox("Enable legs rendering in vehicles?", "cl_vehlegs")
 
     panel:Help("Offsets")
-    panel:NumSlider("Camera Offset", "cl_legs_offset", 10, 30, 1)
+    panel:NumSlider("Camera Offset", "cl_legs_offset", 15, 45, 1)
     panel:NumSlider("Legs Angle", "cl_legs_angle", 0, 15, 1)
 end
 
-hook.Add("PopulateToolMenu", "CLegsMenuAdd", function()
-    spawnmenu.AddToolMenuOption("Options", "CLegs", "CLegsSettings", "Settings", "", "", function(panel)
+hook.Add("PopulateToolMenu", "CLegs.Settings", function()
+    spawnmenu.AddToolMenuOption("Options", "CLegs", "CLegs", "Settings", "", "", function(panel)
         panel:ClearControls()
 
         LegsSettings(panel)

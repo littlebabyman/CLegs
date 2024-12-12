@@ -307,8 +307,8 @@ local pGetVehicle = PLAYER.GetVehicle
 local eGetAngles = ENTITY.GetAngles
 local eEyeAngles = ENTITY.EyeAngles
 local eGetMoveType = ENTITY.GetMoveType
-local legsOffset = CreateClientConVar("cl_legs_offset", 22, true, false, "Offset of legs from you.", 0, 30)
-local legsAngle = CreateClientConVar("cl_legs_angle", 2.5, true, false, "Angle of legs.", -10, 10)
+local legsOffset = CreateClientConVar("cl_legs_offset", 22, true, false, "Offset of legs from you.", 15, 45)
+local legsAngle = CreateClientConVar("cl_legs_angle", 2.5, true, false, "Angle of legs.", 0, 15)
 
 function ENT:ApplyRenderOffset(pos, ang)
     local inVehicle = pInVehicle(ply)
