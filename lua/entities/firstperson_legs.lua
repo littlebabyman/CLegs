@@ -349,8 +349,6 @@ end
 local sShouldDraw = nil
 local sApplyRenderOffset = nil
 local eGetTable = ENTITY.GetTable
-local eDrawShadow = ENTITY.DrawShadow
-local eDestroyShadow = ENTITY.DestroyShadow
 local rGetName = FindMetaTable("ITexture").GetName
 local sLower = string.lower
 local eSetRenderOrigin = ENTITY.SetRenderOrigin
@@ -394,10 +392,6 @@ function ENT:DoRender(plyTable)
     end
 
     legsTable.DidDraw = true
-
-    -- COMMENT
-    eDrawShadow(self, false)
-    eDestroyShadow(self)
 
     eSetRenderOrigin(self, legsTable.RenderPos)
     eSetRenderAngles(self, legsTable.RenderAng)

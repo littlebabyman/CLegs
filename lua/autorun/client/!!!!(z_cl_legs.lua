@@ -16,7 +16,7 @@ local function GetLegModel(ply, plyTable)
 end
 
 function GetPlayerLegs(ply)
-    local client = LocalPlayer()
+    client = client or LocalPlayer()
 
     if ply and ply != client then
         return
@@ -65,6 +65,12 @@ local wasAlive = false
 hook.Add("Think", "CLegs.ChangeModel", function()
     client = client or LocalPlayer()
 
+    if client == NULL then
+        client = nil
+
+        return
+    end
+
     local plyTable = eGetTable(client)
     local legModel = GetLegModel(client, plyTable)
     local legsValid = aIsValid(legEnt)
@@ -109,20 +115,42 @@ hook.Add("PlayerSwitchWeapon", "CLegs.InvalidateBones", function(ply, oldWep, ne
     end)
 end)
 
-hook.Add("PlayerEnteredVehicle", "CLegs.InvalidateBones", function(ply, veh)
+local function OnVehicleChange()
     if !aIsValid(legEnt) then
         return
     end
 
     legEnt:DoBoneManipulation()
-end)
+end
 
-hook.Add("PlayerLeaveVehicle", "CLegs.InvalidateBones", function(ply, veh)
-    if !aIsValid(legEnt) then
+local hasEntered = false
+local wasInVehicle = false
+local pInVehicle = PLAYER.InVehicle
+
+hook.Add("Tick", "CLegs.VehicleSwitch", function()
+    client = client or LocalPlayer()
+
+    if client == NULL then
+        client = nil
+
         return
     end
 
-    legEnt:DoBoneManipulation()
+    local inVehicle = pInVehicle(client)
+
+    if inVehicle and !hasEntered then
+        OnVehicleChange()
+
+        hasEntered = true
+        wasInVehicle = true
+    end
+
+    if hasEntered and wasInVehicle and !inVehicle then
+        OnVehicleChange()
+
+        hasEntered = false
+        wasInVehicle = false
+    end
 end)
 
 local doRenderFunc = nil
@@ -130,7 +158,6 @@ local doRenderFunc = nil
 hook.Add("PostDrawTranslucentRenderables", "CLegs.DoRender", function(bDepth, bSkybox, b3dSkybox)
     -- If we are attempting to draw in the skybox, don't.
     -- We do not include our legs in the depth buffer because they were ALWAYS next to our EyePos.
-    -- bDepth or 
     if bSkybox or b3dSkybox then
         return
     end
