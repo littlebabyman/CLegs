@@ -172,13 +172,13 @@ hook.Add("PostDrawTranslucentRenderables", "CLegs.DoRender", function(bDepth, bS
     end
 end)
 
-concommand.Add("cl_clegs_toggle", function(ply, cmd, args, argStr)
+concommand.Add("cl_legs_toggle", function(ply, cmd, args, argStr)
     local newToggle = legsEnabled:GetBool() and 0 or 1
 
     RunConsoleCommand("cl_legs", newToggle)
 end)
 
-concommand.Add("cl_clegs_refresh", function(ply, cmd, args, argStr)
+concommand.Add("cl_legs_refresh", function(ply, cmd, args, argStr)
     ConstructLegsEnt(ply)
 end)
 
