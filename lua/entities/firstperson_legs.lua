@@ -312,13 +312,18 @@ local legsAngle = CreateClientConVar("cl_legs_angle", 2.5, true, false, "Angle o
 
 function ENT:ApplyRenderOffset(pos, ang)
     local inVehicle = pInVehicle(ply)
-    local isCrouching = eIsFlagSet(ply, FL_DUCKING)
+    local onGround = eIsFlagSet(ply, FL_ONGROUND)
 
-    if !isCrouching and !inVehicle then
+    if !inVehicle then
         local crouchProgress = GetDuckFraction(ply)
         local angleOffset = legsAngle:GetFloat()
 
         ang.x = -angleOffset
+
+        if !onGround then
+            crouchProgress = 0
+        end
+
         pos.z = Lerp(crouchProgress, (pos.z - angleOffset * 0.2) + 8, pos.z)
     end
 
@@ -338,9 +343,11 @@ function ENT:ApplyRenderOffset(pos, ang)
         pos.x = pos.x + math.cos(radAngle) * forwardOffset
         pos.y = pos.y + math.sin(radAngle) * forwardOffset
 
+        local isCrouching = eIsFlagSet(ply, FL_DUCKING)
+
         -- If we're crouching in the air and not noclipped, apply our duck offset.
         -- This prevents our legs from shifting downwards a lot.
-        if !eIsFlagSet(ply, FL_ONGROUND) and isCrouching and eGetMoveType(ply) != MOVETYPE_NOCLIP then
+        if !onGround and isCrouching and eGetMoveType(ply) != MOVETYPE_NOCLIP then
             pos.z = pos.z - 28
         end
     end
