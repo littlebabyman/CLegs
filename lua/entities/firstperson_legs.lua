@@ -118,10 +118,10 @@ function ENT:Think()
     return true
 end
 
+local holster = GetConVar("holsterweapon_weapon")
 local pGetAllowWeaponsInVehicle = PLAYER.GetAllowWeaponsInVehicle
 local pGetActiveWeapon = PLAYER.GetActiveWeapon
 local eGetClass = ENTITY.GetClass
-local holsterClass = "weaponholster"
 
 local function IsHoldingWeaponInVehicle(ply)
     if !pGetAllowWeaponsInVehicle(ply) then
@@ -132,6 +132,12 @@ local function IsHoldingWeaponInVehicle(ply)
 
     if !wep or wep == NULL then
         return false
+    end
+
+    local holsterClass = holster:GetString()
+
+    if holsterClass == "" then
+        holsterClass = "weaponholster"
     end
 
     return eGetClass(wep) != holsterClass
