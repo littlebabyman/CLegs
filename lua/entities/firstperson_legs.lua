@@ -118,25 +118,6 @@ function ENT:Think()
     return true
 end
 
-local pGetAllowWeaponsInVehicle = PLAYER.GetAllowWeaponsInVehicle
-local pGetActiveWeapon = PLAYER.GetActiveWeapon
-local eGetClass = ENTITY.GetClass
-local holsterClass = "weaponholster"
-
-local function IsHoldingWeaponInVehicle(ply)
-    if !pGetAllowWeaponsInVehicle(ply) then
-        return false
-    end
-
-    local wep = pGetActiveWeapon(ply)
-
-    if !wep or wep == NULL then
-        return false
-    end
-
-    return eGetClass(wep) != holsterClass
-end
-
 local legsEnabled = GetConVar("cl_legs")
 local vLegsEnabled = CreateClientConVar("cl_vehlegs", 1, true, false, "Enable/Disable the rendering of the legs in vehicles", 0, 1)
 local pInVehicle = PLAYER.InVehicle
@@ -170,7 +151,6 @@ function ENT:ShouldDraw(plyTable)
         return  (pAlive(ply) or (plyTable.IsGhosted and plyTable.IsGhosted(ply)))    and
                 ShouldDrawInVehicle()                                                and
                 aGetViewEntity() == ply                                              and
-                !IsHoldingWeaponInVehicle(ply)                                       and
                 !pShouldDrawLocalPlayer(ply)                                         and
                 !aIsValid(pGetObserverTarget(ply))                                   and
                 !ExternalShouldDraw(plyTable)                                        and
@@ -183,6 +163,53 @@ end
 local headBone = {
     "ValveBiped.Bip01_Head1",
     "ValveBiped.Bip01_Neck1"
+}
+
+local armBones = {
+    "ValveBiped.Bip01_Head1",
+    "ValveBiped.Bip01_Neck1",
+    "ValveBiped.Bip01_L_Hand",
+    "ValveBiped.Bip01_L_Forearm",
+    "ValveBiped.Bip01_L_Upperarm",
+    "ValveBiped.Bip01_L_Clavicle",
+    "ValveBiped.Bip01_R_Hand",
+    "ValveBiped.Bip01_R_Forearm",
+    "ValveBiped.Bip01_R_Upperarm",
+    "ValveBiped.Bip01_R_Clavicle",
+    "ValveBiped.Bip01_L_Finger4",
+    "ValveBiped.Bip01_L_Finger41",
+    "ValveBiped.Bip01_L_Finger42",
+    "ValveBiped.Bip01_L_Finger3",
+    "ValveBiped.Bip01_L_Finger31",
+    "ValveBiped.Bip01_L_Finger32",
+    "ValveBiped.Bip01_L_Finger2",
+    "ValveBiped.Bip01_L_Finger21",
+    "ValveBiped.Bip01_L_Finger22",
+    "ValveBiped.Bip01_L_Finger1",
+    "ValveBiped.Bip01_L_Finger11",
+    "ValveBiped.Bip01_L_Finger12",
+    "ValveBiped.Bip01_L_Finger0",
+    "ValveBiped.Bip01_L_Finger01",
+    "ValveBiped.Bip01_L_Finger02",
+    "ValveBiped.Bip01_R_Finger4",
+    "ValveBiped.Bip01_R_Finger41",
+    "ValveBiped.Bip01_R_Finger42",
+    "ValveBiped.Bip01_R_Finger3",
+    "ValveBiped.Bip01_R_Finger31",
+    "ValveBiped.Bip01_R_Finger32",
+    "ValveBiped.Bip01_R_Finger2",
+    "ValveBiped.Bip01_R_Finger21",
+    "ValveBiped.Bip01_R_Finger22",
+    "ValveBiped.Bip01_R_Finger1",
+    "ValveBiped.Bip01_R_Finger11",
+    "ValveBiped.Bip01_R_Finger12",
+    "ValveBiped.Bip01_R_Finger0",
+    "ValveBiped.Bip01_R_Finger01",
+    "ValveBiped.Bip01_R_Finger02",
+    "ValveBiped.Bip01_L_Wrist",
+    "ValveBiped.Bip01_L_Ulna",
+    "ValveBiped.Bip01_R_Wrist",
+    "ValveBiped.Bip01_R_Ulna"
 }
 
 local bodyBones = {
@@ -243,7 +270,28 @@ local safeScaleBones = {
     ["ValveBiped.Bip01_Neck1"] = true
 }
 
+local holster = GetConVar("holsterweapon_weapon")
+local pGetActiveWeapon = PLAYER.GetActiveWeapon
+local eGetClass = ENTITY.GetClass
+
+local function IsHoldingWeaponInVehicle(ply)
+    local wep = pGetActiveWeapon(ply)
+
+    if !wep or wep == NULL then
+        return false
+    end
+
+    local holsterClass = holster:GetString()
+
+    if holsterClass == "" then
+        holsterClass = "weaponholster"
+    end
+
+    return eGetClass(wep) != holsterClass
+end
+
 local eGetBoneCount = ENTITY.GetBoneCount
+local pGetAllowWeaponsInVehicle = PLAYER.GetAllowWeaponsInVehicle
 local eManipulateBoneScale = ENTITY.ManipulateBoneScale
 local eManipulateBonePosition = ENTITY.ManipulateBonePosition
 local eManipulateBoneAngles = ENTITY.ManipulateBoneAngles
@@ -263,6 +311,11 @@ function ENT:DoBoneManipulation()
 
     if inVehicle then
         bonesToRemove, removeCount = headBone, 2
+
+        -- Hide our arms if we're not holding a weapon that isn't NULL or our holster.
+        if pGetAllowWeaponsInVehicle(ply) and IsHoldingWeaponInVehicle(ply) then
+            bonesToRemove, removeCount = armBones, #armBones
+        end
     end
 
     for i = 1, removeCount do
