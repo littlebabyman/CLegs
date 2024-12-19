@@ -373,9 +373,11 @@ local eSetRenderAngles = ENTITY.SetRenderAngles
 local eGetColor = ENTITY.GetColor
 local eDrawModel = ENTITY.DrawModel
 local clipVector = vector_up * -1
-local waterRT = "_rt_waterreflection"
-local dummyRT = "_rt_shadowdummy"
-local cameraRT = "_rt_camera"
+local blockedRTs = {
+    _rt_waterreflection = true,
+    _rt_shadowdummy = true,
+    _rt_camera = true
+}
 
 function ENT:DoRender(plyTable)
     local rt = render.GetRenderTarget()
@@ -384,7 +386,7 @@ function ENT:DoRender(plyTable)
     if rt then
         local rtName = sLower(rGetName(rt))
 
-        if rtName == waterRT or rtName == dummyRT or rtName == cameraRT then
+        if blockedRTs[rtName] then
             return
         end
     end
