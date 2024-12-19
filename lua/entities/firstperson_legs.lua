@@ -45,6 +45,7 @@ function ENT:Initialize()
 end
 
 local ENTITY = FindMetaTable("Entity")
+local eGetModelScale, eSetModelScale = ENTITY.GetModelScale, ENTITY.SetModelScale
 local eGetRenderFX, eSetRenderFX = ENTITY.GetRenderFX, ENTITY.SetRenderFX
 local eGetPos, eSetPos = ENTITY.GetPos, ENTITY.SetPos
 local pGetRenderAngles, eSetAngles = PLAYER.GetRenderAngles, ENTITY.SetAngles
@@ -63,8 +64,15 @@ local aCurTime = CurTime
 local haveLayeredSequencesBeenFixed = false
 local wasAlive = false
 local lastBodygroupApply = 0
+local lastModelScale = nil
 
 function ENT:Think()
+    local curModelScale = eGetModelScale(ply)
+
+    if curModelScale != lastModelScale then
+        eSetModelScale(self, curModelScale)
+    end
+
     eSetRenderFX(self, eGetRenderFX(ply))
     eSetPos(self, eGetPos(ply))
     eSetAngles(self, pGetRenderAngles(ply))
@@ -91,7 +99,11 @@ function ENT:Think()
         eSetPoseParameter(self, i, math.Remap(eGetPoseParameter(ply, i), 0, 1, min, max))
     end
 
-    eInvalidateBoneCache(self)
+    if curModelScale != lastModelScale then
+        eInvalidateBoneCache(self)
+    end
+
+    lastModelScale = curModelScale
 
     local curTime = aCurTime()
 
