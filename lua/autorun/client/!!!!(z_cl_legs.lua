@@ -34,6 +34,7 @@ local function ConstructLegsEnt(ply, legModel, plyTable)
         plyTable.LegEnt = nil
 
         legEnt:Remove()
+        legEnt = nil
     end
 
     legModel = legModel or GetLegModel(ply, plyTable)
@@ -45,11 +46,11 @@ local function ConstructLegsEnt(ply, legModel, plyTable)
     plyTable.LegEnt = legEnt
 end
 
-local legsEnabled = CreateClientConVar("cl_legs", 1, true, false, "Enable/Disable the rendering of the legs", 0, 1)
+local enabled = CreateClientConVar("cl_legs", 1, true, false, "Enable/Disable the rendering of the legs", 0, 1)
 
 hook.Add("InitPostEntity", "CLegs.Initialize", function()
     timer.Simple(0, function()
-        if !legsEnabled:GetBool() then
+        if !enabled:GetBool() then
             return
         end
 
@@ -71,6 +72,10 @@ hook.Add("Think", "CLegs.ChangeModel", function()
         return
     end
 
+    if !enabled:GetBool() then
+        return
+    end
+
     local plyTable = eGetTable(client)
     local legModel = GetLegModel(client, plyTable)
     local legsValid = aIsValid(legEnt)
@@ -89,6 +94,7 @@ hook.Add("Think", "CLegs.ChangeModel", function()
             plyTable.LegEnt = nil
 
             legEnt:Remove()
+            legEnt = nil
         end
     elseif !wasAlive and isAlive then
         ConstructLegsEnt(client, legModel, plyTable)
@@ -172,8 +178,27 @@ hook.Add("PostDrawTranslucentRenderables", "CLegs.DoRender", function(bDepth, bS
     end
 end)
 
+cvars.AddChangeCallback("cl_legs", function(name, old, new)
+    if old == new then
+        return
+    end
+
+    local bool = new == "1" and true or false
+
+    if bool then
+        ConstructLegsEnt(LocalPlayer())
+    else
+        if IsValid(legEnt) then
+            client.LegEnt = nil
+
+            legEnt:Remove()
+            legEnt = nil
+        end
+    end
+end)
+
 concommand.Add("cl_legs_toggle", function(ply, cmd, args, argStr)
-    local newToggle = legsEnabled:GetBool() and 0 or 1
+    local newToggle = enabled:GetBool() and 0 or 1
 
     RunConsoleCommand("cl_legs", newToggle)
 end)
