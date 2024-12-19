@@ -58,11 +58,9 @@ local eGetPoseParameter, eSetPoseParameter = ENTITY.GetPoseParameter, ENTITY.Set
 local eInvalidateBoneCache = ENTITY.InvalidateBoneCache
 local eGetNumBodyGroups = ENTITY.GetNumBodyGroups
 local eGetBodygroup, eSetBodygroup = ENTITY.GetBodygroup, ENTITY.SetBodygroup
-local pAlive = PLAYER.Alive
 local eSetNextClientThink = ENTITY.SetNextClientThink
 local aCurTime = CurTime
 local haveLayeredSequencesBeenFixed = false
-local wasAlive = false
 local lastBodygroupApply = 0
 local lastModelScale = nil
 
@@ -114,14 +112,6 @@ function ENT:Think()
 
         lastBodygroupApply = curTime
     end
-
-    local isAlive = pAlive(ply)
-
-    if !wasAlive and isAlive then
-        self:DoBoneManipulation()
-    end
-
-    wasAlive = isAlive
 
     -- Set the next think to run as soon as possible, i.e. the next frame.
     eSetNextClientThink(self, curTime)
