@@ -134,9 +134,13 @@ local function IsHoldingWeaponInVehicle(ply)
         return false
     end
 
-    local holsterClass = holster and holster:GetString()
+    if !holster then
+        return true
+    end
 
-    if !holsterClass or holsterClass == "" then
+    local holsterClass = holster:GetString()
+
+    if holsterClass == "" then
         holsterClass = "weaponholster"
     end
 
