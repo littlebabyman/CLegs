@@ -63,7 +63,7 @@ local plyAlive = PLAYER.Alive
 local aIsValid = IsValid
 local wasAlive = false
 
-hook.Add("Think", "CLegs.ChangeModel", function()
+hook.Add("Tick", "CLegs.ChangeModel", function()
     client = client or LocalPlayer()
 
     if client == NULL then
