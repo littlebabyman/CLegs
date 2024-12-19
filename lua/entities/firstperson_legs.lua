@@ -166,6 +166,7 @@ local function ExternalShouldDraw(plyTable)
     return VWallrunning or inmantle or (pk_pills and pk_pills.getMappedEnt(ply)) or (plyTable.IsProne and plyTable.IsProne(ply)) or (VManip and VMLegs:IsActive())
 end
 
+local pAlive = PLAYER.Alive
 local pShouldDrawLocalPlayer = PLAYER.ShouldDrawLocalPlayer
 local pGetObserverTarget = PLAYER.GetObserverTarget
 local aGetViewEntity = GetViewEntity
