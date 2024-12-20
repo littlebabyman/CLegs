@@ -1,3 +1,6 @@
+-- Global for detection by third-party addons.
+CLegs = true
+
 local ENTITY = FindMetaTable("Entity")
 local entityGetModel = ENTITY.GetModel
 local eGetTable = ENTITY.GetTable
