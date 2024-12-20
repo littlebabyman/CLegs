@@ -385,10 +385,10 @@ local blockedRTs = {
 
 function ENT:DoRender(plyTable)
     local rt = render.GetRenderTarget()
-
+    local rtName
     -- WORKAROUND: https://github.com/Facepunch/garrysmod-requests/issues/1943#issuecomment-1039511256
     if rt then
-        local rtName = sLower(rGetName(rt))
+        rtName = sLower(rGetName(rt))
 
         if blockedRTs[rtName] then
             return
@@ -432,11 +432,12 @@ function ENT:DoRender(plyTable)
 
             -- honestly just took the funny example off gmod wiki for blending
             if wLegsEnabled:GetBool() then
-                render.DepthRange(0.1, 0.5)
+                local water = rtName != "_rt_waterrefraction"
+                render.DepthRange(0.1, water and 0.01 or 1) -- eh it looks good enough tbh
                 render.OverrideColorWriteEnable( true, false )
                 eDrawModel(self)
                 render.OverrideColorWriteEnable( false )
-                render.SetBlend(renderColor.a / 255 * 0.8)
+                render.SetBlend(render.GetBlend() * 0.8)
                 eDrawModel(self)
                 render.DepthRange(0, 1)
             end
