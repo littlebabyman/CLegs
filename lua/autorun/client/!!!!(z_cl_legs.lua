@@ -214,6 +214,7 @@ local function LegsSettings(panel)
     panel:Help("Toggles")
     panel:CheckBox("Enable legs rendering?", "cl_legs")
     panel:CheckBox("Enable legs rendering in vehicles?", "cl_vehlegs")
+    panel:CheckBox("Enable legs rendering in walls?", "cl_legs_inwall")
 
     panel:Help("Offsets")
     panel:NumSlider("Camera Offset", "cl_legs_offset", 15, 45, 1)

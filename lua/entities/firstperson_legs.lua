@@ -151,6 +151,7 @@ end
 
 local legsEnabled = GetConVar("cl_legs")
 local vLegsEnabled = CreateClientConVar("cl_vehlegs", 1, true, false, "Enable/Disable the rendering of the legs in vehicles", 0, 1)
+local wLegsEnabled = CreateClientConVar("cl_legs_inwall", 1, true, false, "Enable/Disable the rendering ghostly legs inside walls.", 0, 1)
 local pInVehicle = PLAYER.InVehicle
 
 local function ShouldDrawInVehicle()
@@ -428,6 +429,17 @@ function ENT:DoRender(plyTable)
 
             -- Draw our final legs model.
             eDrawModel(self)
+
+            -- honestly just took the funny example off gmod wiki for blending
+            if wLegsEnabled:GetBool() then
+                render.DepthRange(0.1, 0.5)
+                render.OverrideColorWriteEnable( true, false )
+                eDrawModel(self)
+                render.OverrideColorWriteEnable( false )
+                render.SetBlend(renderColor.a / 255 * 0.8)
+                eDrawModel(self)
+                render.DepthRange(0, 1)
+            end
 
             render.SetBlend(1)
         render.SetColorModulation(1, 1, 1)
