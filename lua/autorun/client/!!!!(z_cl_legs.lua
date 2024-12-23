@@ -201,7 +201,7 @@ cvars.AddChangeCallback("cl_legs", function(name, old, new)
 end)
 
 concommand.Add("cl_legs_toggle", function(ply, cmd, args, argStr)
-    local newToggle = enabled:GetBool() and 0 or 1
+    local newToggle = enabled:GetBool() and "0" or "1"
 
     RunConsoleCommand("cl_legs", newToggle)
 end)
