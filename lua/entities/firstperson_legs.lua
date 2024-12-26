@@ -40,7 +40,8 @@ function ENT:Initialize()
     self:SetMoveType(MOVETYPE_NONE)
     self:DestroyShadow()
 
-    -- COMMENT
+    -- The bone manipulation below can fail if we don't setup our bones immediately. Whoops.
+    self:SetupBones()
     self:DoBoneManipulation()
 end
 
