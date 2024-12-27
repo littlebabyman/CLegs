@@ -194,58 +194,24 @@ function ENT:ShouldDraw(plyTable)
     end
 end
 
-local headBone = {
-    "ValveBiped.Bip01_Head1",
-    "ValveBiped.Bip01_Neck1"
+local headBones = {
+    ["ValveBiped.Bip01_Head1"] = true,
+    ["ValveBiped.Bip01_Neck1"] = true
 }
 
-local bodyBones = {
-    "ValveBiped.Bip01_L_Hand",
-    "ValveBiped.Bip01_L_Forearm",
-    "ValveBiped.Bip01_L_Upperarm",
-    "ValveBiped.Bip01_L_Clavicle",
-    "ValveBiped.Bip01_R_Hand",
-    "ValveBiped.Bip01_R_Forearm",
-    "ValveBiped.Bip01_R_Upperarm",
-    "ValveBiped.Bip01_R_Clavicle",
-    "ValveBiped.Bip01_L_Finger4",
-    "ValveBiped.Bip01_L_Finger41",
-    "ValveBiped.Bip01_L_Finger42",
-    "ValveBiped.Bip01_L_Finger3",
-    "ValveBiped.Bip01_L_Finger31",
-    "ValveBiped.Bip01_L_Finger32",
-    "ValveBiped.Bip01_L_Finger2",
-    "ValveBiped.Bip01_L_Finger21",
-    "ValveBiped.Bip01_L_Finger22",
-    "ValveBiped.Bip01_L_Finger1",
-    "ValveBiped.Bip01_L_Finger11",
-    "ValveBiped.Bip01_L_Finger12",
-    "ValveBiped.Bip01_L_Finger0",
-    "ValveBiped.Bip01_L_Finger01",
-    "ValveBiped.Bip01_L_Finger02",
-    "ValveBiped.Bip01_R_Finger4",
-    "ValveBiped.Bip01_R_Finger41",
-    "ValveBiped.Bip01_R_Finger42",
-    "ValveBiped.Bip01_R_Finger3",
-    "ValveBiped.Bip01_R_Finger31",
-    "ValveBiped.Bip01_R_Finger32",
-    "ValveBiped.Bip01_R_Finger2",
-    "ValveBiped.Bip01_R_Finger21",
-    "ValveBiped.Bip01_R_Finger22",
-    "ValveBiped.Bip01_R_Finger1",
-    "ValveBiped.Bip01_R_Finger11",
-    "ValveBiped.Bip01_R_Finger12",
-    "ValveBiped.Bip01_R_Finger0",
-    "ValveBiped.Bip01_R_Finger01",
-    "ValveBiped.Bip01_R_Finger02",
-    "ValveBiped.Bip01_L_Wrist",
-    "ValveBiped.Bip01_L_Ulna",
-    "ValveBiped.Bip01_R_Wrist",
-    "ValveBiped.Bip01_R_Ulna",
-    "ValveBiped.Bip01_Head1",
-    "ValveBiped.Bip01_Neck1",
-    "ValveBiped.Bip01_Spine4",
-    "ValveBiped.Bip01_Spine2"
+local legBones = {
+    ["ValveBiped.Bip01_Pelvis"] = true,
+    ["ValveBiped.Bip01_Spine"] = true,
+    ["ValveBiped.Bip01_Spine1"] = true,
+    ["ValveBiped.Bip01_L_Thigh"] = true,
+    ["ValveBiped.Bip01_L_Calf"] = true,
+    ["ValveBiped.Bip01_L_Foot"] = true,
+    ["ValveBiped.Bip01_L_Toe0"] = true,
+    ["ValveBiped.Bip01_R_Thigh"] = true,
+    ["ValveBiped.Bip01_R_Calf"] = true,
+    ["ValveBiped.Bip01_R_Foot"] = true,
+    ["ValveBiped.Bip01_R_Toe0"] = true,
+    ["ValveBiped.Cod"] = true
 }
 
 local safeScaleBones = {
@@ -262,37 +228,39 @@ local eManipulateBoneScale = ENTITY.ManipulateBoneScale
 local eManipulateBonePosition = ENTITY.ManipulateBonePosition
 local eManipulateBoneAngles = ENTITY.ManipulateBoneAngles
 local eLookupBone = ENTITY.LookupBone
-local bodyBonesCount = #bodyBones
+local invalidBone = "__INVALIDBONE__"
 local normalScale, hidePos = Vector(1, 1, 1), Vector(0, -32, 0)
 local infScale = Vector(math.huge, math.huge, math.huge)
 
 function ENT:DoBoneManipulation()
-    for i = 0, eGetBoneCount(self) do
+    local boneCount = eGetBoneCount(self)
+    local inVehicle = pInVehicle(ply)
+
+    for i = 0, boneCount do
         eManipulateBoneScale(self, i, normalScale)
         eManipulateBonePosition(self, i, vector_origin)
-    end
 
-    local inVehicle = pInVehicle(ply)
-    local bonesToRemove, removeCount = bodyBones, bodyBonesCount
+        local name = self:GetBoneName(i)
 
-    if inVehicle then
-        bonesToRemove, removeCount = headBone, 2
-    end
+        if !name or name == invalidBone then
+            continue
+        end
 
-    for i = 1, removeCount do
-        local boneID = bonesToRemove[i]
-        local bone = eLookupBone(self, boneID)
+        if !inVehicle and legBones[name] and !safeScaleBones[name] then
+            continue
+        end
 
-        -- TODO: Bone stretching is awful, find a better solution?
-        if bone then
-            local scale = safeScaleBones[boneID] and vector_origin or infScale
+        if inVehicle and !headBones[name] then
+            continue
+        end
 
-            eManipulateBoneScale(self, bone, scale)
+        local scale = safeScaleBones[name] and vector_origin or infScale
 
-            if !inVehicle and safeScaleBones[boneID] then
-                eManipulateBonePosition(self, bone, hidePos)
-                eManipulateBoneAngles(self, bone, angle_zero)
-            end
+        eManipulateBoneScale(self, i, scale)
+
+        if !inVehicle and safeScaleBones[boneID] then
+            eManipulateBonePosition(self, i, hidePos)
+            eManipulateBoneAngles(self, i, angle_zero)
         end
     end
 end
