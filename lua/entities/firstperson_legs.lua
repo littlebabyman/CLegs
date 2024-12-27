@@ -122,12 +122,13 @@ function ENT:Think()
 end
 
 local holster = GetConVar("holsterweapon_weapon")
+local pInVehicle = PLAYER.InVehicle
 local pGetAllowWeaponsInVehicle = PLAYER.GetAllowWeaponsInVehicle
 local pGetActiveWeapon = PLAYER.GetActiveWeapon
 local eGetClass = ENTITY.GetClass
 
 local function IsHoldingWeaponInVehicle(ply)
-    if !pGetAllowWeaponsInVehicle(ply) then
+    if !pInVehicle(ply) or !pGetAllowWeaponsInVehicle(ply) then
         return false
     end
 
@@ -152,7 +153,6 @@ end
 
 local legsEnabled = GetConVar("cl_legs")
 local vLegsEnabled = CreateClientConVar("cl_vehlegs", 1, true, false, "Enable/Disable the rendering of the legs in vehicles", 0, 1)
-local pInVehicle = PLAYER.InVehicle
 
 local function ShouldDrawInVehicle()
     if pInVehicle(ply) then
