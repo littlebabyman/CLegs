@@ -200,6 +200,22 @@ cvars.AddChangeCallback("cl_legs", function(name, old, new)
     end
 end)
 
+-- WORKAROUND: Users are reporting bones staying at world origin regardless of playermodel or configuration.
+-- This scales bones without the math.huge method, which is safer but can result in bones clipping into the players view.
+local stretchWorkaround = CreateClientConVar("cl_legs_safebones", 0, true, false, "If enabled, scales bones with a safer method at the risk of causing view clipping.", 0, 1)
+
+cvars.AddChangeCallback("cl_legs_safebones", function(name, old, new)
+    if old == new then
+        return
+    end
+
+    if !IsValid(legEnt) then
+        return
+    end
+
+    legEnt:DoBoneManipulation()
+end)
+
 concommand.Add("cl_legs_toggle", function(ply, cmd, args, argStr)
     local newToggle = enabled:GetBool() and "0" or "1"
 

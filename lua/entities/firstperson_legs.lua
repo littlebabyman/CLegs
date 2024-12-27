@@ -223,6 +223,7 @@ local safeScaleBones = {
     ["ValveBiped.Bip01_Neck1"] = true
 }
 
+local stretchWorkaround = GetConVar("cl_legs_safebones")
 local eGetBoneCount = ENTITY.GetBoneCount
 local eGetBoneName = ENTITY.GetBoneName
 local eManipulateBoneScale = ENTITY.ManipulateBoneScale
@@ -235,6 +236,7 @@ local infScale = Vector(math.huge, math.huge, math.huge)
 function ENT:DoBoneManipulation()
     local boneCount = eGetBoneCount(self)
     local inVehicle = pInVehicle(ply)
+    local scaleSafely = stretchWorkaround:GetBool()
 
     for i = 0, boneCount do
         eManipulateBoneScale(self, i, normalScale)
@@ -256,9 +258,13 @@ function ENT:DoBoneManipulation()
 
         local scale = safeScaleBones[name] and vector_origin or infScale
 
+        if scaleSafely then
+            scale = vector_origin
+        end
+
         eManipulateBoneScale(self, i, scale)
 
-        if !inVehicle and safeScaleBones[boneID] then
+        if !inVehicle and (safeScaleBones[boneID] or scaleSafely) then
             eManipulateBonePosition(self, i, hidePos)
             eManipulateBoneAngles(self, i, angle_zero)
         end
