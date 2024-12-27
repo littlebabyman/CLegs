@@ -393,20 +393,28 @@ function ENT:DoRender(plyTable)
     eSetRenderOrigin(self, legsTable.RenderPos)
     eSetRenderAngles(self, legsTable.RenderAng)
 
+    local inVehicle = !stretchWorkaround:GetBool() and pInVehicle(ply)
     local renderColor, eyePos = eGetColor(ply), EyePos()
     local bEnabled = render.EnableClipping(true)
 
     -- Clips the upper half of the model.
-    render.PushCustomClipPlane(clipVector, clipVector:Dot(eyePos))
-        render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
-            render.SetBlend(renderColor.a / 255)
+    -- Not applied in vehicles because we only hide the player's head and neck bones when in one.
+    if !inVehicle then
+        render.PushCustomClipPlane(clipVector, clipVector:Dot(eyePos))
+    end
 
-            -- Draw our final legs model.
-            eDrawModel(self)
+    render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
+        render.SetBlend(renderColor.a / 255)
 
-            render.SetBlend(1)
-        render.SetColorModulation(1, 1, 1)
-    render.PopCustomClipPlane()
+        -- Draw our final legs model.
+        eDrawModel(self)
+
+        render.SetBlend(1)
+    render.SetColorModulation(1, 1, 1)
+
+    if !inVehicle then
+        render.PopCustomClipPlane()
+    end
 
     render.EnableClipping(bEnabled)
 
