@@ -224,10 +224,10 @@ local safeScaleBones = {
 }
 
 local eGetBoneCount = ENTITY.GetBoneCount
+local eGetBoneName = ENTITY.GetBoneName
 local eManipulateBoneScale = ENTITY.ManipulateBoneScale
 local eManipulateBonePosition = ENTITY.ManipulateBonePosition
 local eManipulateBoneAngles = ENTITY.ManipulateBoneAngles
-local eLookupBone = ENTITY.LookupBone
 local invalidBone = "__INVALIDBONE__"
 local normalScale, hidePos = Vector(1, 1, 1), Vector(0, -32, 0)
 local infScale = Vector(math.huge, math.huge, math.huge)
@@ -240,7 +240,7 @@ function ENT:DoBoneManipulation()
         eManipulateBoneScale(self, i, normalScale)
         eManipulateBonePosition(self, i, vector_origin)
 
-        local name = self:GetBoneName(i)
+        local name = eGetBoneName(self, i)
 
         if !name or name == invalidBone then
             continue
