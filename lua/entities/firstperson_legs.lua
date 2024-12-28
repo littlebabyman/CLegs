@@ -199,6 +199,55 @@ local headBones = {
     ["ValveBiped.Bip01_Neck1"] = true
 }
 
+local bodyBones = {
+    ["ValveBiped.Bip01_L_Hand"] = true,
+    ["ValveBiped.Bip01_L_Forearm"] = true,
+    ["ValveBiped.Bip01_L_Upperarm"] = true,
+    ["ValveBiped.Bip01_L_Clavicle"] = true,
+    ["ValveBiped.Bip01_R_Hand"] = true,
+    ["ValveBiped.Bip01_R_Forearm"] = true,
+    ["ValveBiped.Bip01_R_Upperarm"] = true,
+    ["ValveBiped.Bip01_R_Clavicle"] = true,
+    ["ValveBiped.Bip01_L_Finger4"] = true,
+    ["ValveBiped.Bip01_L_Finger41"] = true,
+    ["ValveBiped.Bip01_L_Finger42"] = true,
+    ["ValveBiped.Bip01_L_Finger3"] = true,
+    ["ValveBiped.Bip01_L_Finger31"] = true,
+    ["ValveBiped.Bip01_L_Finger32"] = true,
+    ["ValveBiped.Bip01_L_Finger2"] = true,
+    ["ValveBiped.Bip01_L_Finger21"] = true,
+    ["ValveBiped.Bip01_L_Finger22"] = true,
+    ["ValveBiped.Bip01_L_Finger1"] = true,
+    ["ValveBiped.Bip01_L_Finger11"] = true,
+    ["ValveBiped.Bip01_L_Finger12"] = true,
+    ["ValveBiped.Bip01_L_Finger0"] = true,
+    ["ValveBiped.Bip01_L_Finger01"] = true,
+    ["ValveBiped.Bip01_L_Finger02"] = true,
+    ["ValveBiped.Bip01_R_Finger4"] = true,
+    ["ValveBiped.Bip01_R_Finger41"] = true,
+    ["ValveBiped.Bip01_R_Finger42"] = true,
+    ["ValveBiped.Bip01_R_Finger3"] = true,
+    ["ValveBiped.Bip01_R_Finger31"] = true,
+    ["ValveBiped.Bip01_R_Finger32"] = true,
+    ["ValveBiped.Bip01_R_Finger2"] = true,
+    ["ValveBiped.Bip01_R_Finger21"] = true,
+    ["ValveBiped.Bip01_R_Finger22"] = true,
+    ["ValveBiped.Bip01_R_Finger1"] = true,
+    ["ValveBiped.Bip01_R_Finger11"] = true,
+    ["ValveBiped.Bip01_R_Finger12"] = true,
+    ["ValveBiped.Bip01_R_Finger0"] = true,
+    ["ValveBiped.Bip01_R_Finger01"] = true,
+    ["ValveBiped.Bip01_R_Finger02"] = true,
+    ["ValveBiped.Bip01_L_Wrist"] = true,
+    ["ValveBiped.Bip01_L_Ulna"] = true,
+    ["ValveBiped.Bip01_R_Wrist"] = true,
+    ["ValveBiped.Bip01_R_Ulna"] = true,
+    ["ValveBiped.Bip01_Head1"] = true,
+    ["ValveBiped.Bip01_Neck1"] = true,
+    ["ValveBiped.Bip01_Spine4"] = true,
+    ["ValveBiped.Bip01_Spine2"] = true
+}
+
 local legBones = {
     ["ValveBiped.Bip01_Pelvis"] = true,
     ["ValveBiped.Bip01_Spine"] = true,
@@ -219,6 +268,10 @@ local safeScaleBones = {
     ["ValveBiped.Bip01_Spine2"] = true,
     ["ValveBiped.Bip01_L_Clavicle"] = true,
     ["ValveBiped.Bip01_R_Clavicle"] = true,
+    ["ValveBiped.Bip01_L_Elbow"] = true,
+    ["ValveBiped.Bip01_L_Shoulder"] = true,
+    ["ValveBiped.Bip01_R_Elbow"] = true,
+    ["ValveBiped.Bip01_R_Shoulder"] = true,
     ["ValveBiped.Bip01_Head1"] = true,
     ["ValveBiped.Bip01_Neck1"] = true
 }
@@ -248,7 +301,11 @@ function ENT:DoBoneManipulation()
             continue
         end
 
-        if !inVehicle and legBones[name] and !safeScaleBones[name] then
+        if scaleSafely and !bodyBones[name] then
+            continue
+        end
+
+        if !scaleSafely and !inVehicle and legBones[name] and !safeScaleBones[name] then
             continue
         end
 
@@ -295,7 +352,7 @@ local pGetVehicle = PLAYER.GetVehicle
 local eGetAngles = ENTITY.GetAngles
 local eEyeAngles = ENTITY.EyeAngles
 local eGetMoveType = ENTITY.GetMoveType
-local legsOffset = CreateClientConVar("cl_legs_offset", 22, true, false, "Offset of legs from you.", 15, 45)
+local legsOffset = CreateClientConVar("cl_legs_offset", 20, true, false, "Offset of legs from you.", 10, 45)
 local legsAngle = CreateClientConVar("cl_legs_angle", 2.5, true, false, "Angle of legs.", 0, 15)
 
 function ENT:ApplyRenderOffset(pos, ang)
