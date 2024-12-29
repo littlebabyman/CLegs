@@ -398,8 +398,31 @@ function ENT:ApplyRenderOffset(pos, ang)
     end
 end
 
+local eGetNWEntity = ENTITY.GetNWEntity
+local eGetNWInt = ENTITY.GetNWInt
+
+function ENT:ApplyGlidePose(legsTable)
+    if !Glide then
+        return
+    end
+
+    local vehicle = eGetNWEntity(ply, "GlideVehicle", NULL)
+
+    if IsValid(vehicle) and vehicle != NULL then
+        local seatIndex = eGetNWInt(ply, "GlideSeatIndex", 1)
+        local pose = vehicle:GetSeatBoneManipulations(seatIndex)
+
+        if pose then
+            Glide.ApplyBoneManipulations(self, pose)
+        end
+    elseif legsTable.GlideHasPose then
+        Glide.ResetBoneManipulations(self)
+    end
+end
+
 local sShouldDraw = nil
 local sApplyRenderOffset = nil
+local sApplyGlidePose = nil
 local eGetTable = ENTITY.GetTable
 local rGetName = FindMetaTable("ITexture").GetName
 local sLower = string.lower
@@ -413,6 +436,7 @@ local blockedRTs = {
     _rt_shadowdummy = true,
     _rt_camera = true
 }
+local jews = CreateClientConVar("cl_legs_clip", 1, true, false)
 
 function ENT:DoRender(plyTable)
     local rt = render.GetRenderTarget()
@@ -446,6 +470,9 @@ function ENT:DoRender(plyTable)
     end
 
     legsTable.DidDraw = true
+
+    sApplyGlidePose = sApplyGlidePose or legsTable.ApplyGlidePose
+    sApplyGlidePose(self, legsTable)
 
     eSetRenderOrigin(self, legsTable.RenderPos)
     eSetRenderAngles(self, legsTable.RenderAng)
