@@ -315,6 +315,11 @@ function ENT:DoBoneManipulation()
 
         local scale = safeScaleBones[name] and vector_origin or infScale
 
+        -- This improves bone hiding in vehicles.
+        if inVehicle then
+            scale = infScale
+        end
+
         if scaleSafely then
             scale = vector_origin
         end
