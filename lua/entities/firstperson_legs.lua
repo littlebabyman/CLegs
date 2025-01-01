@@ -40,7 +40,8 @@ function ENT:Initialize()
     self:SetMoveType(MOVETYPE_NONE)
     self:DestroyShadow()
 
-    -- COMMENT
+    -- The bone manipulation below can fail if we don't setup our bones immediately. Whoops.
+    self:SetupBones()
     self:DoBoneManipulation()
 end
 
@@ -121,12 +122,13 @@ function ENT:Think()
 end
 
 local holster = GetConVar("holsterweapon_weapon")
+local pInVehicle = PLAYER.InVehicle
 local pGetAllowWeaponsInVehicle = PLAYER.GetAllowWeaponsInVehicle
 local pGetActiveWeapon = PLAYER.GetActiveWeapon
 local eGetClass = ENTITY.GetClass
 
 local function IsHoldingWeaponInVehicle(ply)
-    if !pGetAllowWeaponsInVehicle(ply) then
+    if !pInVehicle(ply) or !pGetAllowWeaponsInVehicle(ply) then
         return false
     end
 
@@ -194,58 +196,73 @@ function ENT:ShouldDraw(plyTable)
     end
 end
 
-local headBone = {
-    "ValveBiped.Bip01_Head1",
-    "ValveBiped.Bip01_Neck1"
+local headBones = {
+    ["ValveBiped.Bip01_Head1"] = true,
+    ["ValveBiped.Bip01_Neck1"] = true
 }
 
 local bodyBones = {
-    "ValveBiped.Bip01_L_Hand",
-    "ValveBiped.Bip01_L_Forearm",
-    "ValveBiped.Bip01_L_Upperarm",
-    "ValveBiped.Bip01_L_Clavicle",
-    "ValveBiped.Bip01_R_Hand",
-    "ValveBiped.Bip01_R_Forearm",
-    "ValveBiped.Bip01_R_Upperarm",
-    "ValveBiped.Bip01_R_Clavicle",
-    "ValveBiped.Bip01_L_Finger4",
-    "ValveBiped.Bip01_L_Finger41",
-    "ValveBiped.Bip01_L_Finger42",
-    "ValveBiped.Bip01_L_Finger3",
-    "ValveBiped.Bip01_L_Finger31",
-    "ValveBiped.Bip01_L_Finger32",
-    "ValveBiped.Bip01_L_Finger2",
-    "ValveBiped.Bip01_L_Finger21",
-    "ValveBiped.Bip01_L_Finger22",
-    "ValveBiped.Bip01_L_Finger1",
-    "ValveBiped.Bip01_L_Finger11",
-    "ValveBiped.Bip01_L_Finger12",
-    "ValveBiped.Bip01_L_Finger0",
-    "ValveBiped.Bip01_L_Finger01",
-    "ValveBiped.Bip01_L_Finger02",
-    "ValveBiped.Bip01_R_Finger4",
-    "ValveBiped.Bip01_R_Finger41",
-    "ValveBiped.Bip01_R_Finger42",
-    "ValveBiped.Bip01_R_Finger3",
-    "ValveBiped.Bip01_R_Finger31",
-    "ValveBiped.Bip01_R_Finger32",
-    "ValveBiped.Bip01_R_Finger2",
-    "ValveBiped.Bip01_R_Finger21",
-    "ValveBiped.Bip01_R_Finger22",
-    "ValveBiped.Bip01_R_Finger1",
-    "ValveBiped.Bip01_R_Finger11",
-    "ValveBiped.Bip01_R_Finger12",
-    "ValveBiped.Bip01_R_Finger0",
-    "ValveBiped.Bip01_R_Finger01",
-    "ValveBiped.Bip01_R_Finger02",
-    "ValveBiped.Bip01_L_Wrist",
-    "ValveBiped.Bip01_L_Ulna",
-    "ValveBiped.Bip01_R_Wrist",
-    "ValveBiped.Bip01_R_Ulna",
-    "ValveBiped.Bip01_Head1",
-    "ValveBiped.Bip01_Neck1",
-    "ValveBiped.Bip01_Spine4",
-    "ValveBiped.Bip01_Spine2"
+    ["ValveBiped.Bip01_L_Hand"] = true,
+    ["ValveBiped.Bip01_L_Forearm"] = true,
+    ["ValveBiped.Bip01_L_Upperarm"] = true,
+    ["ValveBiped.Bip01_L_Clavicle"] = true,
+    ["ValveBiped.Bip01_R_Hand"] = true,
+    ["ValveBiped.Bip01_R_Forearm"] = true,
+    ["ValveBiped.Bip01_R_Upperarm"] = true,
+    ["ValveBiped.Bip01_R_Clavicle"] = true,
+    ["ValveBiped.Bip01_L_Finger4"] = true,
+    ["ValveBiped.Bip01_L_Finger41"] = true,
+    ["ValveBiped.Bip01_L_Finger42"] = true,
+    ["ValveBiped.Bip01_L_Finger3"] = true,
+    ["ValveBiped.Bip01_L_Finger31"] = true,
+    ["ValveBiped.Bip01_L_Finger32"] = true,
+    ["ValveBiped.Bip01_L_Finger2"] = true,
+    ["ValveBiped.Bip01_L_Finger21"] = true,
+    ["ValveBiped.Bip01_L_Finger22"] = true,
+    ["ValveBiped.Bip01_L_Finger1"] = true,
+    ["ValveBiped.Bip01_L_Finger11"] = true,
+    ["ValveBiped.Bip01_L_Finger12"] = true,
+    ["ValveBiped.Bip01_L_Finger0"] = true,
+    ["ValveBiped.Bip01_L_Finger01"] = true,
+    ["ValveBiped.Bip01_L_Finger02"] = true,
+    ["ValveBiped.Bip01_R_Finger4"] = true,
+    ["ValveBiped.Bip01_R_Finger41"] = true,
+    ["ValveBiped.Bip01_R_Finger42"] = true,
+    ["ValveBiped.Bip01_R_Finger3"] = true,
+    ["ValveBiped.Bip01_R_Finger31"] = true,
+    ["ValveBiped.Bip01_R_Finger32"] = true,
+    ["ValveBiped.Bip01_R_Finger2"] = true,
+    ["ValveBiped.Bip01_R_Finger21"] = true,
+    ["ValveBiped.Bip01_R_Finger22"] = true,
+    ["ValveBiped.Bip01_R_Finger1"] = true,
+    ["ValveBiped.Bip01_R_Finger11"] = true,
+    ["ValveBiped.Bip01_R_Finger12"] = true,
+    ["ValveBiped.Bip01_R_Finger0"] = true,
+    ["ValveBiped.Bip01_R_Finger01"] = true,
+    ["ValveBiped.Bip01_R_Finger02"] = true,
+    ["ValveBiped.Bip01_L_Wrist"] = true,
+    ["ValveBiped.Bip01_L_Ulna"] = true,
+    ["ValveBiped.Bip01_R_Wrist"] = true,
+    ["ValveBiped.Bip01_R_Ulna"] = true,
+    ["ValveBiped.Bip01_Head1"] = true,
+    ["ValveBiped.Bip01_Neck1"] = true,
+    ["ValveBiped.Bip01_Spine4"] = true,
+    ["ValveBiped.Bip01_Spine2"] = true
+}
+
+local legBones = {
+    ["ValveBiped.Bip01_Pelvis"] = true,
+    ["ValveBiped.Bip01_Spine"] = true,
+    ["ValveBiped.Bip01_Spine1"] = true,
+    ["ValveBiped.Bip01_L_Thigh"] = true,
+    ["ValveBiped.Bip01_L_Calf"] = true,
+    ["ValveBiped.Bip01_L_Foot"] = true,
+    ["ValveBiped.Bip01_L_Toe0"] = true,
+    ["ValveBiped.Bip01_R_Thigh"] = true,
+    ["ValveBiped.Bip01_R_Calf"] = true,
+    ["ValveBiped.Bip01_R_Foot"] = true,
+    ["ValveBiped.Bip01_R_Toe0"] = true,
+    ["ValveBiped.Cod"] = true
 }
 
 local safeScaleBones = {
@@ -253,46 +270,67 @@ local safeScaleBones = {
     ["ValveBiped.Bip01_Spine2"] = true,
     ["ValveBiped.Bip01_L_Clavicle"] = true,
     ["ValveBiped.Bip01_R_Clavicle"] = true,
+    ["ValveBiped.Bip01_L_Elbow"] = true,
+    ["ValveBiped.Bip01_L_Shoulder"] = true,
+    ["ValveBiped.Bip01_R_Elbow"] = true,
+    ["ValveBiped.Bip01_R_Shoulder"] = true,
     ["ValveBiped.Bip01_Head1"] = true,
     ["ValveBiped.Bip01_Neck1"] = true
 }
 
+local stretchWorkaround = GetConVar("cl_legs_safebones")
 local eGetBoneCount = ENTITY.GetBoneCount
+local eGetBoneName = ENTITY.GetBoneName
 local eManipulateBoneScale = ENTITY.ManipulateBoneScale
 local eManipulateBonePosition = ENTITY.ManipulateBonePosition
 local eManipulateBoneAngles = ENTITY.ManipulateBoneAngles
-local eLookupBone = ENTITY.LookupBone
-local bodyBonesCount = #bodyBones
+local invalidBone = "__INVALIDBONE__"
 local normalScale, hidePos = Vector(1, 1, 1), Vector(0, -32, 0)
 local infScale = Vector(math.huge, math.huge, math.huge)
 
 function ENT:DoBoneManipulation()
-    for i = 0, eGetBoneCount(self) do
+    local boneCount = eGetBoneCount(self)
+    local inVehicle = pInVehicle(ply)
+    local scaleSafely = stretchWorkaround:GetBool()
+
+    for i = 0, boneCount do
         eManipulateBoneScale(self, i, normalScale)
         eManipulateBonePosition(self, i, vector_origin)
-    end
 
-    local inVehicle = pInVehicle(ply)
-    local bonesToRemove, removeCount = bodyBones, bodyBonesCount
+        local name = eGetBoneName(self, i)
 
-    if inVehicle then
-        bonesToRemove, removeCount = headBone, 2
-    end
+        if !name or name == invalidBone then
+            continue
+        end
 
-    for i = 1, removeCount do
-        local boneID = bonesToRemove[i]
-        local bone = eLookupBone(self, boneID)
+        if scaleSafely and !bodyBones[name] then
+            continue
+        end
 
-        -- TODO: Bone stretching is awful, find a better solution?
-        if bone then
-            local scale = safeScaleBones[boneID] and vector_origin or infScale
+        if !scaleSafely and !inVehicle and legBones[name] and !safeScaleBones[name] then
+            continue
+        end
 
-            eManipulateBoneScale(self, bone, scale)
+        if inVehicle and !headBones[name] then
+            continue
+        end
 
-            if !inVehicle and safeScaleBones[boneID] then
-                eManipulateBonePosition(self, bone, hidePos)
-                eManipulateBoneAngles(self, bone, angle_zero)
-            end
+        local scale = safeScaleBones[name] and vector_origin or infScale
+
+        -- This improves bone hiding in vehicles.
+        if inVehicle then
+            scale = infScale
+        end
+
+        if scaleSafely then
+            scale = vector_origin
+        end
+
+        eManipulateBoneScale(self, i, scale)
+
+        if !inVehicle and (safeScaleBones[boneID] or scaleSafely) then
+            eManipulateBonePosition(self, i, hidePos)
+            eManipulateBoneAngles(self, i, angle_zero)
         end
     end
 end
@@ -321,7 +359,7 @@ local pGetVehicle = PLAYER.GetVehicle
 local eGetAngles = ENTITY.GetAngles
 local eEyeAngles = ENTITY.EyeAngles
 local eGetMoveType = ENTITY.GetMoveType
-local legsOffset = CreateClientConVar("cl_legs_offset", 22, true, false, "Offset of legs from you.", 15, 45)
+local legsOffset = CreateClientConVar("cl_legs_offset", 20, true, false, "Offset of legs from you.", 10, 45)
 local legsAngle = CreateClientConVar("cl_legs_angle", 2.5, true, false, "Angle of legs.", 0, 15)
 
 function ENT:ApplyRenderOffset(pos, ang)
@@ -367,8 +405,31 @@ function ENT:ApplyRenderOffset(pos, ang)
     end
 end
 
+local eGetNWEntity = ENTITY.GetNWEntity
+local eGetNWInt = ENTITY.GetNWInt
+
+function ENT:ApplyGlidePose(legsTable)
+    if !Glide then
+        return
+    end
+
+    local vehicle = eGetNWEntity(ply, "GlideVehicle", NULL)
+
+    if IsValid(vehicle) and vehicle != NULL then
+        local seatIndex = eGetNWInt(ply, "GlideSeatIndex", 1)
+        local pose = vehicle:GetSeatBoneManipulations(seatIndex)
+
+        if pose then
+            Glide.ApplyBoneManipulations(self, pose)
+        end
+    elseif legsTable.GlideHasPose then
+        Glide.ResetBoneManipulations(self)
+    end
+end
+
 local sShouldDraw = nil
 local sApplyRenderOffset = nil
+local sApplyGlidePose = nil
 local eGetTable = ENTITY.GetTable
 local rGetName = FindMetaTable("ITexture").GetName
 local sLower = string.lower
@@ -382,6 +443,7 @@ local blockedRTs = {
     _rt_shadowdummy = true,
     _rt_camera = true
 }
+local jews = CreateClientConVar("cl_legs_clip", 1, true, false)
 
 function ENT:DoRender(plyTable)
     local rt = render.GetRenderTarget()
@@ -416,19 +478,24 @@ function ENT:DoRender(plyTable)
 
     legsTable.DidDraw = true
 
+    sApplyGlidePose = sApplyGlidePose or legsTable.ApplyGlidePose
+    sApplyGlidePose(self, legsTable)
+
     eSetRenderOrigin(self, legsTable.RenderPos)
     eSetRenderAngles(self, legsTable.RenderAng)
 
+    local inVehicle = !stretchWorkaround:GetBool() and pInVehicle(ply)
     local renderColor, eyePos = eGetColor(ply), EyePos()
     local bEnabled = render.EnableClipping(true)
 
     -- Clips the upper half of the model.
-    render.PushCustomClipPlane(clipVector, clipVector:Dot(eyePos))
-        render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
-            render.SetBlend(renderColor.a / 255)
+    -- Not applied in vehicles because we only hide the player's head and neck bones when in one.
+    if !inVehicle then
+        render.PushCustomClipPlane(clipVector, clipVector:Dot(eyePos))
+    end
 
-            -- Draw our final legs model.
-            eDrawModel(self)
+    render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
+        render.SetBlend(renderColor.a / 255)
 
             -- honestly just took the funny example off gmod wiki for blending
             if wLegsEnabled:GetBool() then
@@ -445,6 +512,15 @@ function ENT:DoRender(plyTable)
             render.SetBlend(1)
         render.SetColorModulation(1, 1, 1)
     render.PopCustomClipPlane()
+        -- Draw our final legs model.
+        eDrawModel(self)
+
+        render.SetBlend(1)
+    render.SetColorModulation(1, 1, 1)
+
+    if !inVehicle then
+        render.PopCustomClipPlane()
+    end
 
     render.EnableClipping(bEnabled)
 
