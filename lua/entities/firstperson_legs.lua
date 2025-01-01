@@ -495,29 +495,26 @@ function ENT:DoRender(plyTable)
     end
 
     render.SetColorModulation(renderColor.r / 255, renderColor.g / 255, renderColor.b / 255)
-        render.SetBlend(renderColor.a / 255)
+    local blend = renderColor.a / 255
+    render.SetBlend(blend)
 
-            -- honestly just took the funny example off gmod wiki for blending
-            if wLegsEnabled:GetBool() then
-                local water = rtName != "_rt_waterrefraction"
-                render.DepthRange(0.1, water and 0.01 or 1) -- eh it looks good enough tbh
-                render.OverrideColorWriteEnable( true, false )
-                eDrawModel(self)
-                render.OverrideColorWriteEnable( false )
-                render.SetBlend(render.GetBlend() * 0.8)
-                eDrawModel(self)
-                render.DepthRange(0, 1)
-            end
+    -- Draw our final legs model.
 
-            render.SetBlend(1)
-        render.SetColorModulation(1, 1, 1)
-    render.PopCustomClipPlane()
-        -- Draw our final legs model.
+    eDrawModel(self)
+    -- honestly just took the funny example off gmod wiki for blending
+    if wLegsEnabled:GetBool() then
+        local water = rtName != "_rt_waterrefraction" and 0.01 or 1
+        render.DepthRange(0.1, water) -- eh it looks good enough tbh
+        render.OverrideColorWriteEnable( true, false )
         eDrawModel(self)
+        render.OverrideColorWriteEnable( false )
+        render.SetBlend(blend * 0.8)
+        eDrawModel(self)
+        render.DepthRange(0, 1)
+    end
 
-        render.SetBlend(1)
+    render.SetBlend(1)
     render.SetColorModulation(1, 1, 1)
-
     if !inVehicle then
         render.PopCustomClipPlane()
     end
