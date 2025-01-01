@@ -502,7 +502,7 @@ function ENT:DoRender(plyTable)
 
     eDrawModel(self)
     -- honestly just took the funny example off gmod wiki for blending
-    if wLegsEnabled:GetBool() then
+    if !inVehicle and wLegsEnabled:GetBool() then
         local water = rtName != "_rt_waterrefraction" and 0.01 or 1
         render.DepthRange(0.1, water) -- eh it looks good enough tbh
         render.OverrideColorWriteEnable( true, false )
