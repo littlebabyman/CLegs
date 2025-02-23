@@ -231,6 +231,7 @@ local function LegsSettings(panel)
     panel:CheckBox("Enable legs rendering?", "cl_legs")
     panel:CheckBox("Enable legs rendering in vehicles?", "cl_vehlegs")
     panel:CheckBox("Enable legs rendering in walls?", "cl_legs_inwall")
+    panel:CheckBox("Enable safe bone scaling method?\nMay cause clipping.", "cl_legs_safebones")
 
     panel:Help("Offsets")
     panel:NumSlider("Camera Offset", "cl_legs_offset", 15, 45, 1)

@@ -1,0 +1,19 @@
+{
+	"title": "mighty foot engaged (now with 3p anims)",
+	"type": "weapon",
+	"tags": 
+	[
+		"fun",
+		"realism"
+	],
+	"ignore"	:
+	[
+		"*.psd",
+		"*.vcproj",
+		"*.svn*",
+		".gitattributes",
+		".git*",
+		"README.md",
+		"LICENSE"
+	]
+}
